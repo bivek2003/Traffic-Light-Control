@@ -1,2 +1,9 @@
 # Traffic-Light-Control
-CS 460 Class Project. Traffic Light Control
+
+CS 460 class project implemented with Java and JavaFX. Java handles the controller, socket communication, device simulation, and tests. JavaFX displays a six-lane road with three lanes in each direction, opposing traffic, and a yellow center line.
+
+## System architect deliverables
+
+- [System architecture](docs/system-architecture.md)
+- [Device interface specification](docs/device-interface-specification.md)
+- [Integration plan](docs/integration-plan.md)
