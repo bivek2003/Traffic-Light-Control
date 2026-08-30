@@ -43,3 +43,12 @@ flowchart LR
 - A yellow center line separates the two directions of travel.
 - JavaFX vehicles must move only in the direction assigned to their lane.
 - The traffic lights control both opposing approaches at the intersection.
+
+## System rules
+
+- All modules use Java; JavaFX is used only for the user interface.
+- Modules communicate with Java `Socket` and `ServerSocket` classes.
+- Each device has a unique ID such as `light-north` or `button-east`.
+- The Multiplexor routes text messages but does not make traffic decisions.
+- Only the controller changes traffic-light states.
+- If the controller disconnects, traffic lights return to red.
