@@ -22,3 +22,17 @@ All members use Java and follow [device-interface-specification.md](device-inter
 3. **Invalid message:** send a bad destination and verify an `ERROR` is returned.
 4. **Disconnect:** disconnect the controller and verify traffic lights return to red.
 5. **Lane direction:** place vehicles in all six lanes and verify each vehicle moves with its assigned direction of traffic without crossing the yellow center line.
+
+## Responsibilities during integration
+
+| Owner | Integration responsibility |
+| --- | --- |
+| Member 1 | Maintains the Java architecture and integrates all modules. |
+| Member 2 | Builds the Java Multiplexor and socket routing. |
+| Member 3 | Builds the Java device simulators. |
+| Member 4 | Builds the JavaFX traffic display. |
+| Member 5 | Builds the Java test harness and scenarios. |
+
+## Change control
+
+Any change to the message format must be shared with the team before integration. After a change, rerun the Java tests and verify the JavaFX display.
