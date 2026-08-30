@@ -58,3 +58,13 @@ Accepts `SET_COLOR` with `RED`, `YELLOW`, or `GREEN`. It returns its current col
 ### Pedestrian push button
 
 Sends a `PEDESTRIAN_REQUEST` event when pressed. It stores whether a request is active until the controller clears it.
+
+### Vehicle detector
+
+Sends `VEHICLE_DETECTED` when a vehicle arrives and `VEHICLE_CLEARED` when it leaves. Each detector includes its road direction and lane number from `1` to `3`, allowing the controller and JavaFX display to identify vehicles in the three lanes on either side of the yellow center line.
+
+Example:
+
+```text
+EVENT|detector-north-2|controller|VEHICLE_DETECTED|NORTH_LANE_2
+```
