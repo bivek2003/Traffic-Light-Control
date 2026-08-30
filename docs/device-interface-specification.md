@@ -24,3 +24,17 @@ Traffic lights, pedestrian buttons, vehicle detectors, and auxiliary devices pro
 - The host and port are passed to the program when it starts.
 
 No external communication library is required.
+
+## Message format
+
+Messages are simple text fields separated by `|`:
+
+```text
+TYPE|SOURCE|DESTINATION|ACTION|VALUE
+```
+
+Example:
+
+```text
+COMMAND|controller|light-north|SET_COLOR|GREEN
+```
