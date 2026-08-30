@@ -38,3 +38,13 @@ Example:
 ```text
 COMMAND|controller|light-north|SET_COLOR|GREEN
 ```
+
+## Message types
+
+| Type | Sender → receiver | Purpose |
+| --- | --- | --- |
+| `REGISTER` | Any client → Multiplexor | Registers the component ID. |
+| `COMMAND` | Controller → device | Changes a device state. |
+| `STATE` | Device → controller/JavaFX | Reports the current device state. |
+| `EVENT` | Device → controller | Reports a button press or vehicle detection. |
+| `ERROR` | Any component → sender | Reports an invalid message or destination. |
