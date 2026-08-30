@@ -52,3 +52,11 @@ flowchart LR
 - The Multiplexor routes text messages but does not make traffic decisions.
 - Only the controller changes traffic-light states.
 - If the controller disconnects, traffic lights return to red.
+
+## Control loop
+
+1. A Java detector or push-button object sends an `EVENT` message.
+2. The Java Multiplexor forwards it to the controller.
+3. The controller sends a `COMMAND` to the correct traffic light.
+4. The device replies with its new `STATE`.
+5. The JavaFX application displays the state.
