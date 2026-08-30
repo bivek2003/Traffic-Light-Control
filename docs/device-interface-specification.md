@@ -72,3 +72,7 @@ EVENT|detector-north-2|controller|VEHICLE_DETECTED|NORTH_LANE_2
 ### Auxiliary device
 
 Reports a simple status of `NORMAL`, `FAULT`, or `OFFLINE`.
+
+## Routing and error behavior
+
+The Multiplexor checks that a message has five fields and that the destination is connected. Invalid messages return `ERROR`. The Multiplexor does not store traffic-light logic.
