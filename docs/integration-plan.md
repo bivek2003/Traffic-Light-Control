@@ -14,3 +14,11 @@ All members use Java and follow [device-interface-specification.md](device-inter
 | 4. JavaFX display | Members 3, 4 | State messages work | JavaFX shows six lanes, opposing traffic, the yellow center line, and the correct light color |
 | 5. Java tests | Members 2–5 | Full system runs | Test scenarios pass |
 | 6. Final check | All members | All modules are connected | Startup instructions and test results are ready |
+
+## End-to-end acceptance scenarios
+
+1. **Vehicle:** detect a vehicle and verify its direction eventually receives a green light.
+2. **Pedestrian:** press the JavaFX pedestrian button and verify the request reaches the controller.
+3. **Invalid message:** send a bad destination and verify an `ERROR` is returned.
+4. **Disconnect:** disconnect the controller and verify traffic lights return to red.
+5. **Lane direction:** place vehicles in all six lanes and verify each vehicle moves with its assigned direction of traffic without crossing the yellow center line.
