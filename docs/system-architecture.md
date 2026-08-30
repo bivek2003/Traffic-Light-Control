@@ -25,3 +25,13 @@ flowchart LR
     DSH <--> VD
     DSH <--> AX
 ```
+
+## Module ownership and boundaries
+
+| Module | Owner | Owns | Does not own |
+| --- | --- | --- | --- |
+| Traffic Controller | Member 1 | Java control logic and signal timing | Socket routing or JavaFX drawing |
+| Multiplexor | Member 2 | Java `ServerSocket` connections and message routing | Traffic-control decisions |
+| Device Simulators | Member 3 | Java device state and command handling | Signal timing rules |
+| JavaFX Simulator | Member 4 | Intersection display and vehicle animation | Controller decisions |
+| Main Test Harness | Member 5 | Java test scenarios and result checks | Production control logic |
