@@ -14,3 +14,13 @@ public interface Device {
 ```
 
 Traffic lights, pedestrian buttons, vehicle detectors, and auxiliary devices provide their own implementation of these four methods.
+
+## Socket communication
+
+- The Multiplexor uses Java `ServerSocket`.
+- The controller, devices, and test harness use Java `Socket`.
+- `BufferedReader` reads one message per line.
+- `PrintWriter` sends one message per line.
+- The host and port are passed to the program when it starts.
+
+No external communication library is required.
