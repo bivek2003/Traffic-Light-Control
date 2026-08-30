@@ -35,3 +35,11 @@ flowchart LR
 | Device Simulators | Member 3 | Java device state and command handling | Signal timing rules |
 | JavaFX Simulator | Member 4 | Intersection display and vehicle animation | Controller decisions |
 | Main Test Harness | Member 5 | Java test scenarios and result checks | Production control logic |
+
+## Road layout
+
+- Each road contains six lanes in total.
+- Three lanes carry traffic in one direction and three lanes carry traffic in the opposite direction.
+- A yellow center line separates the two directions of travel.
+- JavaFX vehicles must move only in the direction assigned to their lane.
+- The traffic lights control both opposing approaches at the intersection.
