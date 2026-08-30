@@ -54,3 +54,7 @@ COMMAND|controller|light-north|SET_COLOR|GREEN
 ### Traffic light head
 
 Accepts `SET_COLOR` with `RED`, `YELLOW`, or `GREEN`. It returns its current color in a `STATE` message.
+
+### Pedestrian push button
+
+Sends a `PEDESTRIAN_REQUEST` event when pressed. It stores whether a request is active until the controller clears it.
