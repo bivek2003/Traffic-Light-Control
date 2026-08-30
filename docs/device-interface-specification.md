@@ -68,3 +68,7 @@ Example:
 ```text
 EVENT|detector-north-2|controller|VEHICLE_DETECTED|NORTH_LANE_2
 ```
+
+### Auxiliary device
+
+Reports a simple status of `NORMAL`, `FAULT`, or `OFFLINE`.
