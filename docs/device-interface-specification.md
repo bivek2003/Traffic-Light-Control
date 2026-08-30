@@ -48,3 +48,9 @@ COMMAND|controller|light-north|SET_COLOR|GREEN
 | `STATE` | Device → controller/JavaFX | Reports the current device state. |
 | `EVENT` | Device → controller | Reports a button press or vehicle detection. |
 | `ERROR` | Any component → sender | Reports an invalid message or destination. |
+
+## Device contracts
+
+### Traffic light head
+
+Accepts `SET_COLOR` with `RED`, `YELLOW`, or `GREEN`. It returns its current color in a `STATE` message.
