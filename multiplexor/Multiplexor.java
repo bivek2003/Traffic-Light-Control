@@ -17,11 +17,13 @@ import java.net.Socket;
 //
 // To run it:
 //    javac -d out multiplexor/*.java
-//    java -cp out multiplexor.Multiplexor 5000
+//    java -cp out multiplexor.Multiplexor
 public class Multiplexor {
 
     // The port to use if nobody gives one when starting the program.
-    public static final int DEFAULT_PORT = 5000;
+    // Note: do not use 5000 on a Mac. macOS already uses that port for
+    // AirPlay, so the program fails with "Address already in use".
+    public static final int DEFAULT_PORT = 5050;
 
     private int port;
 

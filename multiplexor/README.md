@@ -24,11 +24,19 @@ yet. That is what I am doing next.
 
 ```
 javac -d out multiplexor/*.java
-java -cp out multiplexor.Multiplexor 5000
+java -cp out multiplexor.Multiplexor
 ```
 
-Then in another terminal type `nc localhost 5000` and type a message like
-`COMMAND|controller|light-north|SET_COLOR|GREEN`.
+Then in another terminal, run the little test client I wrote:
+
+```
+java -cp out multiplexor.TestClient
+```
+
+It sends a few messages and you can watch them show up in the first window.
+
+It uses port 5050. Do not use 5000 on a Mac, macOS already uses that one for
+AirPlay and you get an "Address already in use" error.
 
 ## To do
 
