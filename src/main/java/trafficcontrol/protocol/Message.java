@@ -1,8 +1,10 @@
 package trafficcontrol.protocol;
 
-import java.util.Objects;
+/*
+@author Bivek Panthi
+*/
 
-/** An immutable TYPE|SOURCE|DESTINATION|ACTION|VALUE protocol message. */
+import java.util.Objects;
 public final class Message {
     private final MessageType type;
     private final String source;

@@ -1,11 +1,14 @@
 package trafficcontrol.controller;
 
+/*
+@author Bivek Panthi
+*/
+
 import java.util.List;
 import trafficcontrol.protocol.Message;
 import trafficcontrol.protocol.MessageType;
 import trafficcontrol.protocol.ProtocolException;
 
-/** Dependency-free unit tests. Run with the commands documented in README.md. */
 public final class TrafficControllerLogicTest {
     private static int testsRun;
 
