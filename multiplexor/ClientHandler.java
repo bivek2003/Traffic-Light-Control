@@ -83,6 +83,7 @@ public class ClientHandler implements Runnable {
         // parse() gives back null when the line is not a proper message.
         if (m == null) {
             System.out.println("[mux] that was not a proper message");
+            sendError("BAD_MESSAGE", line);
             return;
         }
 
@@ -103,12 +104,36 @@ public class ClientHandler implements Runnable {
         // first, otherwise we would not know who it is.
         if (name == null) {
             System.out.println("[mux] this program has not registered yet");
+            sendError("NOT_REGISTERED", line);
             return;
         }
 
         // Anything left over is a normal message, so let the Multiplexor
         // pass it on to whoever it is for.
         mux.deliver(m, this);
+    }
+
+    // Sends an ERROR message back to this program so it knows something
+    // went wrong instead of just waiting for a reply that never comes.
+    //
+    // The spec says there is an ERROR type but it does not say what to put
+    // in the last two fields, so I am putting a short reason and then
+    // whatever caused the problem. Need to check this with Bivek.
+    public void sendError(String reason, String detail) {
+        String to = name;
+
+        // If they never registered we do not know their name.
+        if (to == null) {
+            to = "unknown";
+        }
+
+        // The detail is often the line that was wrong, and that line can
+        // have | in it. If I left them in, my ERROR would end up with more
+        // than 5 fields and the other program could not read it. So swap
+        // them for a / first.
+        String safeDetail = detail.replace("|", "/");
+
+        send(new Message("ERROR", "mux", to, reason, safeDetail).toLine());
     }
 
     private void closeSocket() {

@@ -112,6 +112,7 @@ public class Multiplexor {
 
         if (target == null) {
             System.out.println("[mux] nobody called " + m.getDestination() + " is connected");
+            from.sendError("UNKNOWN_DESTINATION", m.getDestination());
             return;
         }
 

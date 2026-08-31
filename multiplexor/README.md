@@ -13,12 +13,11 @@ The messages are lines of text in the format
 
 ## Where I am so far
 
-The message class works, it can split a line into the 5 fields and put it back
-together. The Multiplexor takes several programs at the same time now, each one
-on its own thread, and it remembers the name every program registers with. When
-a program sends REGISTER it gets a reply back so it knows it worked.
-
-It still does not deliver messages to anybody. That is what I am doing next.
+My part is working now. The Multiplexor takes several programs at the same
+time, each on its own thread. A program sends REGISTER to say what its name is
+and gets a reply back. After that, anything it sends goes on to the program
+named in the DESTINATION field. If the message is written wrong, or nobody with
+that name is connected, an ERROR comes back to whoever sent it.
 
 ## How to run it
 
@@ -44,5 +43,31 @@ AirPlay and you get an "Address already in use" error.
 - [x] open a server socket
 - [x] handle more than one program at a time
 - [x] remember the name each program registers with
-- [ ] deliver messages to the right place
-- [ ] send ERROR back when something is wrong
+- [x] deliver messages to the right place
+- [x] send ERROR back when something is wrong
+- [ ] unit tests (this is on Bivek's chart as one of my deliverables)
+
+## Errors it sends
+
+An ERROR looks like `ERROR|mux|<your name>|<reason>|<what went wrong>`.
+
+| Reason | What it means |
+| --- | --- |
+| `BAD_MESSAGE` | The line did not have 5 fields, or the type was not one of the 5 |
+| `NOT_REGISTERED` | The program sent something before sending REGISTER |
+| `UNKNOWN_DESTINATION` | Nobody with that name is connected |
+
+Any `|` in the last field gets swapped for a `/`, otherwise the ERROR itself
+would have more than 5 fields and you would not be able to read it.
+
+## Questions for Bivek
+
+1. The spec has an ERROR type but does not say what goes in its ACTION and
+   VALUE fields. I picked a short reason and then the text that caused the
+   problem. Is that okay?
+2. The spec says a STATE message goes to the controller and to JavaFX, but
+   DESTINATION only holds one name. How should a device send one state message
+   to both of them?
+3. The architecture doc says the lights go red if the controller disconnects,
+   but it also says the Multiplexor does not make traffic decisions. Which
+   module is supposed to do that?
