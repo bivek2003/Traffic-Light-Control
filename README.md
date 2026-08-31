@@ -24,9 +24,11 @@ Java 11 or newer is required. From the repository root:
 
 ```sh
 mkdir -p out
-javac -d out $(find src/main/java src/test/java -name '*.java')
+javac -d out $(find src/main/java -name '*.java')
+javac -cp out -d out $(find src/test/java -name '*.java' ! -path 'src/test/java/ui/*')
 java -ea -cp out trafficcontrol.controller.TrafficControllerLogicTest
 java -ea -cp out trafficcontrol.controller.TrafficControllerSocketTest
+java -ea -cp out trafficcontrol.testharness.TestHarnessScriptTest
 ```
 
 No network connection or third-party test library is required. The test suite
@@ -57,3 +59,35 @@ to red before processing events.
 
 Member 3's build, test, startup, and JavaFX connection instructions are in
 [docs/device-simulator.md](docs/device-simulator.md).
+
+## Run test harness
+
+The entry point is `trafficcontrol.testharness.TestHarness`. It
+connects to the Java Multiplexor, registers as `test-harness`, runs scripted
+socket test cases, validates responses, and prints a pass/fail report.
+
+Compile first:
+
+```sh
+mkdir -p out
+javac -d out $(find src/main/java -name '*.java')
+javac -cp out -d out $(find src/test/java -name '*.java' ! -path 'src/test/java/ui/*')
+```
+
+Run the default Multiplexor smoke test:
+
+```sh
+java -cp out trafficcontrol.testharness.TestHarness
+```
+
+Run explicit scripts:
+
+```sh
+java -cp out trafficcontrol.testharness.TestHarness localhost 5050 \
+  test-scripts/test-multiplexer-smoke.tfs \
+  test-scripts/test-controller-invalid-source.tfs
+```
+
+Script files support `SEND`, `SEND_RAW`, `EXPECT`, `EXPECT_FIELDS`, `WAIT`,
+and `TIMEOUT`. `EXPECT_FIELDS` compares the five protocol fields and allows
+`*` as a wildcard field.
