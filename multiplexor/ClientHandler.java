@@ -38,7 +38,11 @@ public class ClientHandler implements Runnable {
     }
 
     // Sends one line of text to this program.
-    public void send(String line) {
+    //
+    // Synchronized because other programs' threads can all send to this
+    // same program at the same time. Without it two messages get mixed
+    // together into one broken line.
+    public synchronized void send(String line) {
         out.println(line);
     }
 
@@ -102,8 +106,9 @@ public class ClientHandler implements Runnable {
             return;
         }
 
-        // Not delivering anything yet, that is the next thing on my list.
-        System.out.println("[mux] " + name + " sent something for " + m.getDestination());
+        // Anything left over is a normal message, so let the Multiplexor
+        // pass it on to whoever it is for.
+        mux.deliver(m, this);
     }
 
     private void closeSocket() {

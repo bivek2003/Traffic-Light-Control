@@ -13,9 +13,9 @@ import java.util.Map;
 // The Multiplexor sits in the middle. The controller, the devices and the
 // test harness all connect to it and it passes messages between them.
 //
-// Right now it can take several programs at the same time and it remembers
-// the name each one registers with. It still does not deliver anything,
-// that is next.
+// It takes several programs at the same time, remembers the name each one
+// registers with, and passes their messages on to whoever they are
+// addressed to.
 //
 // To run it:
 //    javac -d out multiplexor/*.java
@@ -92,6 +92,32 @@ public class Multiplexor {
     public synchronized void addName(String name, ClientHandler handler) {
         namedClients.put(name, handler);
         System.out.println("[mux] names so far: " + namedClients.keySet());
+    }
+
+    // Finds the program that registered with this name.
+    // Gives back null if nobody with that name is connected.
+    // This is synchronized because the map is being changed by other
+    // threads while we are looking in it.
+    public synchronized ClientHandler findByName(String name) {
+        return namedClients.get(name);
+    }
+
+    // Sends a message on to the program named in the DESTINATION field.
+    //
+    // This one is NOT synchronized on purpose. Sending goes out over a
+    // socket, and if I held the lock while doing that then one slow program
+    // would stop everybody else from registering or leaving.
+    public void deliver(Message m, ClientHandler from) {
+        ClientHandler target = findByName(m.getDestination());
+
+        if (target == null) {
+            System.out.println("[mux] nobody called " + m.getDestination() + " is connected");
+            return;
+        }
+
+        // Send it on exactly as it arrived.
+        target.send(m.toLine());
+        System.out.println("[mux] sent it to " + m.getDestination());
     }
 
     // Takes a program off both lists when it disconnects.
