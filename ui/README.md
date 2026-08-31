@@ -63,16 +63,15 @@ running:
 ./ui/build.sh
 ```
 
-Both scripts only wrap these three commands, so you can run them by hand:
+Both scripts only wrap these two commands, so you can run them by hand:
 
 ```sh
 javac --module-path $PATH_TO_FX --add-modules javafx.controls -d out ui/*.java
-cp ui/style.css out/ui/
 java --module-path $PATH_TO_FX --add-modules javafx.controls -cp out ui.TrafficApp
 ```
 
-The `cp` matters. `style.css` is loaded with `getResource`, so it has to sit
-beside the compiled classes or the window comes up unstyled.
+There is no stylesheet and nothing to copy. Colours and fonts are set through
+the JavaFX API in `Theme.java`, so the display depends on nothing but JavaFX.
 
 Output goes to `out/`, the same folder the controller build uses, and `out/` is
 already in `.gitignore`.
@@ -132,7 +131,7 @@ our own, which is why `.vscode/` is already in `.gitignore`.
 | `Vehicle.java` | One vehicle on one approach |
 | `Pedestrian.java` | One person on one crossing |
 | `Palette.java` | Colours used on the canvas |
-| `style.css` | Colours and fonts for the window around the canvas |
+| `Theme.java` | Colours and fonts for the window, and the light and dark palettes |
 
 ## How it works
 

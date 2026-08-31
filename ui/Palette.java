@@ -7,7 +7,7 @@ import javafx.scene.paint.Color;
  *
  * <p>Road materials do not change with the theme. Asphalt is asphalt whether
  * the surrounding window is light or dark, so only the window chrome is
- * themed, and that is handled in style.css instead.
+ * themed, and that is handled in Theme.
  */
 public final class Palette {
 

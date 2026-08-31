@@ -4,7 +4,7 @@ set -e
 cd "$(dirname "$0")/.."
 
 FX="${PATH_TO_FX:-$HOME/javafx/javafx-sdk-26.0.2/lib}"
-if [ ! -f out/ui/TrafficApp.class ] || [ ! -f out/ui/style.css ]; then
+if [ ! -f out/ui/TrafficApp.class ]; then
   ./ui/build.sh
 fi
 

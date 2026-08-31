@@ -15,6 +15,4 @@ if [ ! -d "$FX" ]; then
 fi
 
 javac --module-path "$FX" --add-modules javafx.controls -d out ui/*.java
-# style.css is loaded with getResource, so it has to sit beside the classes.
-cp ui/style.css out/ui/
 echo "built -> out/ui"
