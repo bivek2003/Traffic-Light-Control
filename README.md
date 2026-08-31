@@ -7,3 +7,7 @@ CS 460 class project implemented with Java and JavaFX. Java handles the controll
 - [System architecture](docs/system-architecture.md)
 - [Device interface specification](docs/device-interface-specification.md)
 - [Integration plan](docs/integration-plan.md)
+
+## Setup
+
+- [JavaFX setup](docs/javafx-setup.md) — installing JavaFX, checking the version, and troubleshooting
