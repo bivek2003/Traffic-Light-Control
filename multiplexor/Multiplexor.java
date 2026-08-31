@@ -1,19 +1,18 @@
 package multiplexor;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 // This is my part of the project (Member 2).
 //
 // The Multiplexor sits in the middle. The controller, the devices and the
 // test harness all connect to it and it passes messages between them.
 //
-// Right now it only takes ONE program at a time and just prints whatever
-// that program sends. Next I need to make it handle a few programs at the
-// same time, and then actually deliver the messages.
+// Right now it can take several programs at the same time and it prints
+// what they send. It still does not deliver anything, that is next.
 //
 // To run it:
 //    javac -d out multiplexor/*.java
@@ -26,6 +25,11 @@ public class Multiplexor {
     public static final int DEFAULT_PORT = 5050;
 
     private int port;
+
+    // Everybody who is connected right now.
+    // Each connection runs on its own thread and they all touch this list,
+    // so I have to lock it before changing it or two threads can mess it up.
+    private List<ClientHandler> clients = new ArrayList<>();
 
     public Multiplexor(int port) {
         this.port = port;
@@ -48,41 +52,38 @@ public class Multiplexor {
         mux.start();
     }
 
-    // Opens the server socket and waits for a program to connect.
+    // Opens the server socket and keeps waiting for programs to connect.
     public void start() {
         try {
             ServerSocket server = new ServerSocket(port);
             System.out.println("[mux] listening on port " + port);
 
-            // accept() waits here until somebody connects.
-            Socket socket = server.accept();
-            System.out.println("[mux] someone connected");
+            // Keep going forever so more than one program can join.
+            while (true) {
+                // accept() waits here until somebody connects.
+                Socket socket = server.accept();
 
-            BufferedReader in = new BufferedReader(
-                    new InputStreamReader(socket.getInputStream()));
+                // Give this connection its own handler on its own thread.
+                ClientHandler handler = new ClientHandler(socket, this);
+                addClient(handler);
 
-            // Keep reading lines until the other program closes.
-            // readLine() gives back null when that happens.
-            String line;
-            while ((line = in.readLine()) != null) {
-                System.out.println("[mux] got: " + line);
-
-                // Try turning the line into a Message so I can check my
-                // parsing works. It does not go anywhere yet.
-                Message m = Message.parse(line);
-                if (m == null) {
-                    System.out.println("[mux] that was not a proper message");
-                } else {
-                    System.out.println("[mux] it is for: " + m.getDestination());
-                }
+                Thread t = new Thread(handler);
+                t.start();
             }
-
-            System.out.println("[mux] the program disconnected");
-            socket.close();
-            server.close();
-
         } catch (IOException e) {
             System.out.println("[mux] something went wrong: " + e.getMessage());
         }
+    }
+
+    // Adds a program to the list when it connects.
+    public synchronized void addClient(ClientHandler handler) {
+        clients.add(handler);
+        System.out.println("[mux] " + clients.size() + " program(s) connected");
+    }
+
+    // Takes a program off the list when it disconnects.
+    public synchronized void removeClient(ClientHandler handler) {
+        clients.remove(handler);
+        System.out.println("[mux] a program left, " + clients.size() + " still connected");
     }
 }
