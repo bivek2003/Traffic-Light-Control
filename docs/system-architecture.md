@@ -51,7 +51,10 @@ flowchart LR
 - Each device has a unique ID such as `light-north` or `button-east`.
 - The Multiplexor routes text messages but does not make traffic decisions.
 - Only the controller changes traffic-light states.
-- If the controller disconnects, traffic lights return to red.
+- The controller starts all lights red and uses green, yellow, and all-red phases.
+- If the controller disconnects, the Multiplexor notifies the device hub and
+  the device hub returns traffic lights to red. Socket loss also triggers this
+  device-side fail-safe.
 
 ## Control loop
 
@@ -59,4 +62,21 @@ flowchart LR
 2. The Java Multiplexor forwards it to the controller.
 3. The controller sends a `COMMAND` to the correct traffic light.
 4. The device replies with its new `STATE`.
-5. The JavaFX application displays the state.
+5. The device simulator passes the same state to JavaFX over their direct
+   simulator connection; the Multiplexor never broadcasts one message to two
+   destinations.
+
+## Controller state machine
+
+The controller groups north/south and east/west as non-conflicting movements.
+It starts all-red and serves demand from vehicle detectors and pedestrian
+buttons. An active green lasts at least 5 seconds and at most 15 seconds. A
+waiting opposing request causes this transition: green → 2-second yellow →
+1-second all-red → opposing green. Auxiliary `FAULT` or `OFFLINE` reports
+force the controller to all-red immediately.
+
+The production entry point is
+`trafficcontrol.controller.TrafficController`. It connects to the
+Multiplexor, registers as `controller`, validates incoming messages, and sends
+`SET_COLOR` commands. Signal timing stays in the controller; socket routing
+stays in the Multiplexor.
