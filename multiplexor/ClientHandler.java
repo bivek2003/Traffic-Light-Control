@@ -19,6 +19,10 @@ public class ClientHandler implements Runnable {
     private BufferedReader in;
     private PrintWriter out;
 
+    // The name this program registered with, like "controller".
+    // It stays null until a REGISTER message arrives.
+    private String name = null;
+
     public ClientHandler(Socket socket, Multiplexor mux) throws IOException {
         this.socket = socket;
         this.mux = mux;
@@ -27,6 +31,10 @@ public class ClientHandler implements Runnable {
         // The "true" makes it send each line straight away instead of
         // holding on to it.
         this.out = new PrintWriter(socket.getOutputStream(), true);
+    }
+
+    public String getName() {
+        return name;
     }
 
     // Sends one line of text to this program.
@@ -74,8 +82,28 @@ public class ClientHandler implements Runnable {
             return;
         }
 
+        // A REGISTER is how a program tells us its name. I deal with it
+        // here instead of passing it on to anybody else.
+        if (m.getType().equals("REGISTER")) {
+            name = m.getSource();
+            mux.addName(name, this);
+            System.out.println("[mux] registered: " + name);
+
+            // Send a reply so the program knows it worked and does not
+            // have to guess.
+            send(new Message("STATE", "mux", name, "REGISTERED", "OK").toLine());
+            return;
+        }
+
+        // Everything else has to come from a program that told us its name
+        // first, otherwise we would not know who it is.
+        if (name == null) {
+            System.out.println("[mux] this program has not registered yet");
+            return;
+        }
+
         // Not delivering anything yet, that is the next thing on my list.
-        System.out.println("[mux] it is for: " + m.getDestination());
+        System.out.println("[mux] " + name + " sent something for " + m.getDestination());
     }
 
     private void closeSocket() {

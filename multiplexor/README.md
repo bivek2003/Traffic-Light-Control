@@ -14,11 +14,11 @@ The messages are lines of text in the format
 ## Where I am so far
 
 The message class works, it can split a line into the 5 fields and put it back
-together. The Multiplexor opens a socket and prints out whatever gets sent to
-it, so I know the reading part works.
+together. The Multiplexor takes several programs at the same time now, each one
+on its own thread, and it remembers the name every program registers with. When
+a program sends REGISTER it gets a reply back so it knows it worked.
 
-It only takes one program at a time right now and it does not deliver anything
-yet. That is what I am doing next.
+It still does not deliver messages to anybody. That is what I am doing next.
 
 ## How to run it
 
@@ -42,7 +42,7 @@ AirPlay and you get an "Address already in use" error.
 
 - [x] class for reading a message
 - [x] open a server socket
-- [ ] handle more than one program at a time
-- [ ] remember the name each program registers with
+- [x] handle more than one program at a time
+- [x] remember the name each program registers with
 - [ ] deliver messages to the right place
 - [ ] send ERROR back when something is wrong

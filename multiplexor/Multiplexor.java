@@ -4,15 +4,18 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 // This is my part of the project (Member 2).
 //
 // The Multiplexor sits in the middle. The controller, the devices and the
 // test harness all connect to it and it passes messages between them.
 //
-// Right now it can take several programs at the same time and it prints
-// what they send. It still does not deliver anything, that is next.
+// Right now it can take several programs at the same time and it remembers
+// the name each one registers with. It still does not deliver anything,
+// that is next.
 //
 // To run it:
 //    javac -d out multiplexor/*.java
@@ -30,6 +33,10 @@ public class Multiplexor {
     // Each connection runs on its own thread and they all touch this list,
     // so I have to lock it before changing it or two threads can mess it up.
     private List<ClientHandler> clients = new ArrayList<>();
+
+    // The name each program registered with, so I can find the right one
+    // when I start delivering messages. Locked the same way as the list.
+    private Map<String, ClientHandler> namedClients = new HashMap<>();
 
     public Multiplexor(int port) {
         this.port = port;
@@ -81,9 +88,20 @@ public class Multiplexor {
         System.out.println("[mux] " + clients.size() + " program(s) connected");
     }
 
-    // Takes a program off the list when it disconnects.
+    // Saves the name a program registered with.
+    public synchronized void addName(String name, ClientHandler handler) {
+        namedClients.put(name, handler);
+        System.out.println("[mux] names so far: " + namedClients.keySet());
+    }
+
+    // Takes a program off both lists when it disconnects.
     public synchronized void removeClient(ClientHandler handler) {
         clients.remove(handler);
+
+        if (handler.getName() != null) {
+            namedClients.remove(handler.getName());
+        }
+
         System.out.println("[mux] a program left, " + clients.size() + " still connected");
     }
 }
