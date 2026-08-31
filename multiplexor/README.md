@@ -1,6 +1,6 @@
 # Multiplexor
 
-This is my part of the project (Member 2). I am building the Multiplexor.
+This is my part of the project (Utshab). I am building the Multiplexor.
 
 The Multiplexor sits in the middle of the system. The controller, the device
 simulators and the test harness all connect to it with sockets, and it passes
