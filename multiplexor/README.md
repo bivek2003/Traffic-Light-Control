@@ -1,6 +1,6 @@
 # Multiplexor
 
-This is my part of the project (Utshab). I am building the Multiplexor.
+This is my part of the project (Utshab). I built the Multiplexor.
 
 The Multiplexor sits in the middle of the system. The controller, the device
 simulators and the test harness all connect to it with sockets, and it passes
@@ -11,41 +11,71 @@ The messages are lines of text in the format
 `TYPE|SOURCE|DESTINATION|ACTION|VALUE`, from
 `docs/device-interface-specification.md`.
 
-## Where I am so far
+## Where the files are
 
-My part is working now. The Multiplexor takes several programs at the same
-time, each on its own thread. A program sends REGISTER to say what its name is
-and gets a reply back. After that, anything it sends goes on to the program
-named in the DESTINATION field. If the message is written wrong, or nobody with
-that name is connected, an ERROR comes back to whoever sent it.
+My code moved into the shared `src` folder when Bivek put the project together.
+
+| File | What it does |
+| --- | --- |
+| `src/main/java/multiplexor/Multiplexor.java` | Has `main`. Opens the server socket, keeps the list of connected programs, delivers the messages |
+| `src/main/java/multiplexor/ClientHandler.java` | Looks after one connected program, on its own thread |
+| `src/main/java/multiplexor/Message.java` | Splits a line into its five parts and joins them back up |
+| `src/test/java/multiplexor/TestClient.java` | A small client I wrote so I can test without typing messages by hand |
 
 ## How to run it
 
+Build everything from the repository root:
+
+```sh
+mkdir -p out
+javac -d out $(find src/main/java src/test/java -name '*.java')
 ```
-javac -d out multiplexor/*.java
+
+Start the Multiplexor. It has to be running before anything else connects:
+
+```sh
 java -cp out multiplexor.Multiplexor
 ```
 
-Then in another terminal, run the little test client I wrote:
+It uses port 5050. You can give it a different one, like
+`java -cp out multiplexor.Multiplexor 6000`.
 
-```
+Do not use port 5000 on a Mac. macOS already uses that one for AirPlay and you
+get an "Address already in use" error.
+
+To try it out, open a second terminal and run my test client:
+
+```sh
 java -cp out multiplexor.TestClient
 ```
 
 It sends a few messages and you can watch them show up in the first window.
 
-It uses port 5050. Do not use 5000 on a Mac, macOS already uses that one for
-AirPlay and you get an "Address already in use" error.
+## How a program connects
 
-## To do
+1. Open a socket to the Multiplexor's host and port.
+2. Send a REGISTER saying what your name is, for example
+   `REGISTER|light-north|mux|CONNECT|`.
+3. Wait for `STATE|mux|light-north|REGISTERED|OK` to come back. That reply means
+   the Multiplexor has saved your name, so you do not have to guess whether it
+   worked.
+4. After that, send normal messages. Anything you send goes to whoever is named
+   in the DESTINATION field.
 
-- [x] class for reading a message
-- [x] open a server socket
-- [x] handle more than one program at a time
-- [x] remember the name each program registers with
-- [x] deliver messages to the right place
-- [x] send ERROR back when something is wrong
-- [ ] unit tests (this is on Bivek's chart as one of my deliverables)
+## What it does with each message
+
+- A REGISTER saves your name and sends the reply back. It does not get passed
+  on to anybody else.
+- Anything sent before registering is refused, because the Multiplexor would not
+  know who to send an answer back to.
+- Everything else gets looked up by the name in DESTINATION and passed on
+  exactly as it arrived. Nothing in the message is changed.
+- When a program disconnects, its name comes off the list straight away so
+  nothing gets sent into a socket that is gone.
+
+Several programs can be connected at the same time. Each one gets its own
+thread, because reading from a socket makes the program stop and wait, and one
+quiet program should not freeze everybody else.
 
 ## Errors it sends
 
@@ -57,17 +87,26 @@ An ERROR looks like `ERROR|mux|<your name>|<reason>|<what went wrong>`.
 | `NOT_REGISTERED` | The program sent something before sending REGISTER |
 | `UNKNOWN_DESTINATION` | Nobody with that name is connected |
 
-Any `|` in the last field gets swapped for a `/`, otherwise the ERROR itself
-would have more than 5 fields and you would not be able to read it.
+Any `|` in the last field gets swapped for a `/`. Without that the ERROR itself
+would end up with more than 5 fields and the program getting it would not be
+able to read it.
 
-## Questions for Bivek
+## Tests
 
-1. The spec has an ERROR type but does not say what goes in its ACTION and
-   VALUE fields. I picked a short reason and then the text that caused the
-   problem. Is that okay?
-2. The spec says a STATE message goes to the controller and to JavaFX, but
-   DESTINATION only holds one name. How should a device send one state message
-   to both of them?
-3. The architecture doc says the lights go red if the controller disconnects,
-   but it also says the Multiplexor does not make traffic decisions. Which
-   module is supposed to do that?
+Two test classes, both plain Java with no test library needed.
+
+`MessageTest` checks the message parsing. It does not open any sockets so it
+runs straight away:
+
+```sh
+java -ea -cp out multiplexor.MessageTest
+```
+
+`MultiplexorTest` checks the delivering and the ERROR replies. It starts a
+Multiplexor on port 5599 and connects to it the same way a real program would:
+
+```sh
+java -ea -cp out multiplexor.MultiplexorTest
+```
+
+Both stop with a message saying which check failed if something is wrong.
