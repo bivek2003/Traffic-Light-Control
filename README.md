@@ -46,10 +46,14 @@ The defaults are `localhost` and port `5050`. The expected complete-system
 startup order is:
 
 1. Multiplexor
-2. Device simulator
-3. JavaFX simulator
-4. Traffic controller
-5. Test harness
+2. JavaFX simulator with its device simulator
+3. Traffic controller
+4. Test harness
 
 On startup the controller registers as `controller` and commands every light
 to red before processing events.
+
+## Device simulator
+
+Member 3's build, test, startup, and JavaFX connection instructions are in
+[docs/device-simulator.md](docs/device-simulator.md).
