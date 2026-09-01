@@ -14,5 +14,8 @@ if [ ! -d "$FX" ]; then
   exit 1
 fi
 
-javac --module-path "$FX" --add-modules javafx.controls -d out ui/*.java
+mkdir -p out
+javac -d out $(find src/main/java -name '*.java')
+javac --module-path "$FX" --add-modules javafx.controls \
+      -cp out -d out ui/*.java
 echo "built -> out/ui"

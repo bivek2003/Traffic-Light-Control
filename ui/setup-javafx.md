@@ -206,19 +206,10 @@ team wants it the other way.
 
 ## Connecting it to the rest of the system
 
-The display runs its own signal cycle for now so it can be worked on by itself.
-At integration that is replaced by real messages:
-
-- `Simulation.applyColour` is the only place a light changes colour, so it
-  becomes the handler for an incoming `COMMAND` from the controller.
-- `Simulation.MessageSink` already receives every outgoing message, so it gets
-  pointed at a socket instead of at the log panel.
-- The display registers like any other program, `REGISTER|display|mux|CONNECT|`,
-  and waits for the multiplexor to reply before sending anything.
-- The multiplexor listens on port 5050.
-
-Both seams should use `trafficcontrol.protocol.Message` rather than the strings
-the display formats today, now that a shared protocol class exists on main.
+The display starts the device simulator in the same JavaFX process. Start the
+Multiplexor, run `./ui/run.sh localhost 5050`, and then start the controller.
+JavaFX sends button and detector events through the device simulator and shows
+the device states returned from controller commands.
 
 ## To do
 
@@ -227,6 +218,5 @@ the display formats today, now that a shared protocol class exists on main.
 - [x] vehicles that queue at a red and move off on green
 - [x] pedestrian buttons, with people who actually cross
 - [x] show the messages the display would send
-- [ ] use `trafficcontrol.protocol.Message` instead of formatting strings
-- [ ] connect to the multiplexor instead of running the cycle locally
-- [ ] fall back to all red if the controller disconnects
+- [x] connect to the Multiplexor through the device simulator
+- [x] follow controller light states and use all-red fail-safe

@@ -57,10 +57,9 @@ the simulator's public methods:
 - `vehicleDetected` and `vehicleCleared` send detector events.
 - `setAuxiliaryStatus` sends `NORMAL`, `FAULT`, or `OFFLINE`.
 
-The JavaFX thread should register a state listener and update its display with
-`Platform.runLater`. The shared protocol uses `YELLOW`; the current display
-branch calls the same color `AMBER`, so the display must map or rename that
-value during integration.
+`TrafficApp` starts this simulator and updates JavaFX with `Platform.runLater`.
+Run either `TrafficApp` or `DeviceSimulatorMain`, not both, because both use the
+same device IDs. The display maps protocol `YELLOW` to its `AMBER` lamp.
 
 ## Fail-safe behavior
 
