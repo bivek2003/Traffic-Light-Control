@@ -4,7 +4,11 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import trafficcontrol.protocol.Message;
+import trafficcontrol.protocol.MessageType;
 import trafficcontrol.protocol.ProtocolException;
 
 public final class DeviceSimulator implements AutoCloseable, DeviceConnection.Listener {
@@ -14,6 +18,8 @@ public final class DeviceSimulator implements AutoCloseable, DeviceConnection.Li
     private final DeviceMessageHandler messageHandler;
     private final Map<String, DeviceConnection> connections = new LinkedHashMap<>();
     private final CountDownLatch stopped = new CountDownLatch(1);
+    private final ScheduledExecutorService statusTimer =
+            Executors.newSingleThreadScheduledExecutor();
 
     private volatile boolean started;
     private volatile boolean closing;
@@ -41,6 +47,8 @@ public final class DeviceSimulator implements AutoCloseable, DeviceConnection.Li
             close();
             throw error;
         }
+        statusTimer.scheduleAtFixedRate(this::sendStatusSafely,
+                1, 1, TimeUnit.SECONDS);
         System.out.println("[devices] registered hub and " + logic.getDevices().size()
                 + " devices");
     }
@@ -94,6 +102,20 @@ public final class DeviceSimulator implements AutoCloseable, DeviceConnection.Li
         }
     }
 
+    private void sendStatusSafely() {
+        if (closing) {
+            return;
+        }
+        Device auxiliary = logic.getDevice("aux-system");
+        Message status = new Message(MessageType.STATE, auxiliary.getId(),
+                "controller", "STATUS", auxiliary.getState());
+        try {
+            sendFrom(auxiliary.getId(), status);
+        } catch (IllegalStateException error) {
+            System.err.println("[devices] status update failed: " + error.getMessage());
+        }
+    }
+
     @Override
     public void lineReceived(DeviceConnection connection, String line) {
         Message response = messageHandler.handle(connection.getId(), line);
@@ -121,6 +143,7 @@ public final class DeviceSimulator implements AutoCloseable, DeviceConnection.Li
             return;
         }
         closing = true;
+        statusTimer.shutdownNow();
         for (DeviceConnection connection : connections.values()) {
             connection.close();
         }

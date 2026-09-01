@@ -31,8 +31,6 @@ public final class DeviceSystemTest {
 
             controller.destroyForcibly();
             controller.waitFor();
-            Thread.sleep(200);
-            simulator.vehicleCleared("detector-north-1");
             waitFor(() -> allLightsAre(simulator, "RED"),
                     "controller loss did not trigger all-red fail-safe");
         } finally {
