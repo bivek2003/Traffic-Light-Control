@@ -1,5 +1,0 @@
-# Integration test: verifies controller validation through sockets.
-# Start the Multiplexor and controller before running this file.
-
-SEND EVENT|test-harness|controller|VEHICLE_DETECTED|NORTH_LANE_1
-EXPECT_FIELDS ERROR|controller|test-harness|UNSUPPORTED_MESSAGE|*

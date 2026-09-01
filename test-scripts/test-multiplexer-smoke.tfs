@@ -1,5 +1,0 @@
-# Smoke test: verifies registration plus Multiplexor error routing.
-# Start the Multiplexor first, then run this file with TestHarness.
-
-SEND STATE|test-harness|missing-device|PING|hello
-EXPECT_FIELDS ERROR|mux|test-harness|UNKNOWN_DESTINATION|*

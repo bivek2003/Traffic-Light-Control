@@ -1,0 +1,64 @@
+# Traffic lights: test every supported color on every light.
+SEND COMMAND|test-harness|light-north|SET_COLOR|GREEN
+EXPECT STATE|light-north|test-harness|COLOR|GREEN
+SEND COMMAND|test-harness|light-north|SET_COLOR|YELLOW
+EXPECT STATE|light-north|test-harness|COLOR|YELLOW
+SEND COMMAND|test-harness|light-north|SET_COLOR|RED
+EXPECT STATE|light-north|test-harness|COLOR|RED
+
+SEND COMMAND|test-harness|light-south|SET_COLOR|GREEN
+EXPECT STATE|light-south|test-harness|COLOR|GREEN
+SEND COMMAND|test-harness|light-south|SET_COLOR|YELLOW
+EXPECT STATE|light-south|test-harness|COLOR|YELLOW
+SEND COMMAND|test-harness|light-south|SET_COLOR|RED
+EXPECT STATE|light-south|test-harness|COLOR|RED
+
+SEND COMMAND|test-harness|light-east|SET_COLOR|GREEN
+EXPECT STATE|light-east|test-harness|COLOR|GREEN
+SEND COMMAND|test-harness|light-east|SET_COLOR|YELLOW
+EXPECT STATE|light-east|test-harness|COLOR|YELLOW
+SEND COMMAND|test-harness|light-east|SET_COLOR|RED
+EXPECT STATE|light-east|test-harness|COLOR|RED
+
+SEND COMMAND|test-harness|light-west|SET_COLOR|GREEN
+EXPECT STATE|light-west|test-harness|COLOR|GREEN
+SEND COMMAND|test-harness|light-west|SET_COLOR|YELLOW
+EXPECT STATE|light-west|test-harness|COLOR|YELLOW
+SEND COMMAND|test-harness|light-west|SET_COLOR|RED
+EXPECT STATE|light-west|test-harness|COLOR|RED
+
+# Pedestrian buttons: press and reset all four.
+SEND COMMAND|test-harness|button-north|PRESS|
+EXPECT STATE|button-north|test-harness|REQUEST|PRESSED
+SEND COMMAND|test-harness|button-north|RESET|
+EXPECT STATE|button-north|test-harness|REQUEST|IDLE
+SEND COMMAND|test-harness|button-south|PRESS|
+EXPECT STATE|button-south|test-harness|REQUEST|PRESSED
+SEND COMMAND|test-harness|button-south|RESET|
+EXPECT STATE|button-south|test-harness|REQUEST|IDLE
+SEND COMMAND|test-harness|button-east|PRESS|
+EXPECT STATE|button-east|test-harness|REQUEST|PRESSED
+SEND COMMAND|test-harness|button-east|RESET|
+EXPECT STATE|button-east|test-harness|REQUEST|IDLE
+SEND COMMAND|test-harness|button-west|PRESS|
+EXPECT STATE|button-west|test-harness|REQUEST|PRESSED
+SEND COMMAND|test-harness|button-west|RESET|
+EXPECT STATE|button-west|test-harness|REQUEST|IDLE
+
+# Vehicle detectors: detect and clear a vehicle on every approach.
+SEND COMMAND|test-harness|detector-north|DETECT|
+EXPECT STATE|detector-north|test-harness|PRESENCE|DETECTED
+SEND COMMAND|test-harness|detector-north|CLEAR|
+EXPECT STATE|detector-north|test-harness|PRESENCE|CLEAR
+SEND COMMAND|test-harness|detector-south|DETECT|
+EXPECT STATE|detector-south|test-harness|PRESENCE|DETECTED
+SEND COMMAND|test-harness|detector-south|CLEAR|
+EXPECT STATE|detector-south|test-harness|PRESENCE|CLEAR
+SEND COMMAND|test-harness|detector-east|DETECT|
+EXPECT STATE|detector-east|test-harness|PRESENCE|DETECTED
+SEND COMMAND|test-harness|detector-east|CLEAR|
+EXPECT STATE|detector-east|test-harness|PRESENCE|CLEAR
+SEND COMMAND|test-harness|detector-west|DETECT|
+EXPECT STATE|detector-west|test-harness|PRESENCE|DETECTED
+SEND COMMAND|test-harness|detector-west|CLEAR|
+EXPECT STATE|detector-west|test-harness|PRESENCE|CLEAR
