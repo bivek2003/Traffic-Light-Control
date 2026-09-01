@@ -35,6 +35,13 @@ public class Message {
         // message like STATE|light-north|controller|COLOR| is allowed.
         String[] pieces = line.trim().split("\\|", -1);
 
+        // Take the spaces off each field too. Trimming the whole line only
+        // cleans up the ends, so "COMMAND | controller" would still keep the
+        // spaces around the middle fields. My test caught this.
+        for (int i = 0; i < pieces.length; i++) {
+            pieces[i] = pieces[i].trim();
+        }
+
         // The spec says a message has to have exactly 5 fields.
         if (pieces.length != 5) {
             return null;

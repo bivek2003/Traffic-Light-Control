@@ -91,6 +91,15 @@ Any `|` in the last field gets swapped for a `/`. Without that the ERROR itself
 would end up with more than 5 fields and the program getting it would not be
 able to read it.
 
+## Tests
+
+`src/test/java/multiplexor/MessageTest.java` checks the message parsing. It does
+not open any sockets so it runs straight away:
+
+```sh
+java -ea -cp out multiplexor.MessageTest
+```
+
 ## Still to do
 
-- [ ] unit tests (this is on Bivek's chart as one of my deliverables)
+- [ ] tests for the routing and the ERROR replies
