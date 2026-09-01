@@ -53,3 +53,8 @@ startup order is:
 
 On startup the controller registers as `controller` and commands every light
 to red before processing events.
+
+## Device simulator
+
+Member 3's build, test, startup, and JavaFX connection instructions are in
+[docs/device-simulator.md](docs/device-simulator.md).
