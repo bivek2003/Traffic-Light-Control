@@ -118,6 +118,7 @@ public class Simulation {
 
     private final Map<Character, String> colours = new LinkedHashMap<>();
     private final Map<Character, Boolean> pedestrianWaiting = new LinkedHashMap<>();
+    private final Map<Character, Boolean> pedestrianReady = new LinkedHashMap<>();
 
     private final List<Vehicle> vehicles = new ArrayList<>();
     private final List<Pedestrian> pedestrians = new ArrayList<>();
@@ -127,12 +128,14 @@ public class Simulation {
 
     private double spawnClock = 0;
     private double density = 1.0;
+    private boolean deviceControlled;
 
     public Simulation(MessageSink sink) {
         this.sink = sink;
         for (char d : DIRS) {
             colours.put(d, "RED");
             pedestrianWaiting.put(d, false);
+            pedestrianReady.put(d, false);
             wasWalking.put(d, false);
         }
         applyPhase();
@@ -185,15 +188,35 @@ public class Simulation {
     public List<Pedestrian> pedestrians() {
         return pedestrians;
     }
-    public String phaseLabel()            { return PHASES[phase].label(); }
+    public String phaseLabel() {
+        if (!deviceControlled) {
+            return PHASES[phase].label();
+        }
+        if ("RED".equals(colours.get('N')) && "RED".equals(colours.get('S'))
+                && "RED".equals(colours.get('E')) && "RED".equals(colours.get('W'))) {
+            return "All red";
+        }
+        if (!"RED".equals(colours.get('N')) || !"RED".equals(colours.get('S'))) {
+            String colour = !"RED".equals(colours.get('N'))
+                    ? colours.get('N') : colours.get('S');
+            return "North-south " + colour.toLowerCase();
+        }
+        String colour = !"RED".equals(colours.get('E'))
+                ? colours.get('E') : colours.get('W');
+        return "East-west " + colour.toLowerCase();
+    }
     public List<Vehicle> vehicles()       { return vehicles; }
     public void setDensity(double d)      { this.density = d; }
+
+    public void useDeviceControl() {
+        deviceControlled = true;
+    }
 
     // ---- the loop -------------------------------------------------------
 
     public void advance(double dt) {
         phaseElapsed += dt;
-        if (phaseElapsed >= PHASES[phase].seconds()) {
+        if (!deviceControlled && phaseElapsed >= PHASES[phase].seconds()) {
             int next = (phase + 1) % PHASES.length;
             // Hold the red rather than turn it green under somebody's feet.
             if (!crossingWouldBlock(next)) {
@@ -252,6 +275,38 @@ public class Simulation {
         emit("STATE", headId(dir), "controller", "COLOR", colour, false);
     }
 
+    public void applyDeviceState(String id, String type, String state) {
+        if ("TRAFFIC_LIGHT".equals(type)) {
+            char dir = directionFromId(id);
+            colours.put(dir, "YELLOW".equals(state) ? "AMBER" : state);
+            startReadyCrossing(dir);
+        } else if ("PEDESTRIAN_BUTTON".equals(type)) {
+            char dir = directionFromId(id);
+            if ("REQUESTED".equals(state)) {
+                pedestrianWaiting.put(dir, true);
+                pedestrianReady.put(dir, false);
+            } else if ("IDLE".equals(state)) {
+                pedestrianReady.put(dir, pedestrianWaiting.get(dir));
+                startReadyCrossing(dir);
+            }
+        }
+    }
+
+    private char directionFromId(String id) {
+        if (id.contains("north")) return 'N';
+        if (id.contains("south")) return 'S';
+        if (id.contains("east")) return 'E';
+        if (id.contains("west")) return 'W';
+        throw new IllegalArgumentException("unknown device direction: " + id);
+    }
+
+    private void startReadyCrossing(char dir) {
+        if (pedestrianReady.get(dir) && "RED".equals(colours.get(dir))
+                && !pedestrianWalking(dir)) {
+            startCrossing(dir);
+        }
+    }
+
     private void emit(String type, String src, String dst,
                       String action, String value, boolean detector) {
         if (sink != null) {
@@ -272,6 +327,11 @@ public class Simulation {
         }
         emit("EVENT", buttonId(dir), "controller", "PEDESTRIAN_REQUEST", "PRESSED", false);
 
+        if (deviceControlled) {
+            pedestrianWaiting.put(dir, true);
+            return;
+        }
+
         if ("RED".equals(colours.get(dir))) {
             startCrossing(dir);
         } else {
@@ -291,6 +351,7 @@ public class Simulation {
     /** Puts a small group of people onto one crosswalk. */
     private void startCrossing(char dir) {
         pedestrianWaiting.put(dir, false);
+        pedestrianReady.put(dir, false);
         int people = 2 + random.nextInt(3);
         for (int i = 0; i < people; i++) {
             pedestrians.add(new Pedestrian(
@@ -470,6 +531,13 @@ public class Simulation {
                 emit("EVENT",
                      "detector-" + Character.toLowerCase(v.dir) + "-" + v.lane,
                      "controller", "VEHICLE_DETECTED",
+                     roadName(v.dir) + "_LANE_" + v.lane, true);
+            }
+            if (v.counted && !v.detectorCleared && frontGap < -20) {
+                v.detectorCleared = true;
+                emit("EVENT",
+                     "detector-" + Character.toLowerCase(v.dir) + "-" + v.lane,
+                     "controller", "VEHICLE_CLEARED",
                      roadName(v.dir) + "_LANE_" + v.lane, true);
             }
 

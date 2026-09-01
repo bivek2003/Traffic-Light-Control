@@ -34,6 +34,9 @@ public class Vehicle {
     /** True once the lane detector has reported this vehicle. */
     public boolean counted;
 
+    /** True once the detector has reported that this vehicle left. */
+    public boolean detectorCleared;
+
     public Vehicle(char dir, int lane, double length, double topSpeed, Color colour) {
         this.dir = dir;
         this.lane = lane;
