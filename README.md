@@ -18,7 +18,7 @@ The controller entry point is
 `trafficcontrol.controller.TrafficController`. The obsolete empty root-level
 `main.java` on the Multiplexor branch should not be merged.
 
-## Build and test Member 1's controller
+## Build and test controller
 
 Java 11 or newer is required. From the repository root:
 
