@@ -1,4 +1,4 @@
-# Traffic Light Control Prototype
+# Traffic Light Control
 
 A small Java/JavaFX prototype built around the required workflow:
 
