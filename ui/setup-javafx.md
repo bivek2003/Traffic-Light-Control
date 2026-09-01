@@ -97,23 +97,22 @@ already in `.gitignore`.
 
 ## 5. Using it
 
-| Control | What it does |
-| --- | --- |
-| Pause / Play | Stops and starts the clock |
-| Step | Advances one twelfth of a second, for looking at a single frame |
-| Speed | Runs the simulation faster or slower |
-| Traffic | How often new vehicles arrive |
-| Theme | Switches the window between light and dark |
-| N / S / E / W | Presses that pedestrian button |
+The window contains only the intersection view, a `Check detector` option, and
+four pedestrian-button controls. Traffic continues to appear randomly.
 
-Press a pedestrian button and a group crosses that side. If the road is already
-red they set off at once. If it is green the request is held, the button shows
-`WAIT`, and the green is cut to two seconds so nobody waits out a whole cycle.
-The button shows `WALK` while they are on the crossing, and the light stays red
-until the last one is clear.
+When `Check detector` is selected, the simulator counts approaching vehicles in
+all four directions. It sends demand for the busiest approach, so the controller
+keeps lighter approaches red and safely serves the approach with more traffic.
+When it is not selected, the simulator requests a random opposing direction at
+regular intervals. The controller still enforces green, yellow, and all-red
+transitions; random mode never assigns conflicting green lights directly.
 
-Tick `detectors` above the message log to include vehicle detector events. They
-are hidden by default because there are a great many of them.
+Vehicles randomly travel straight, turn left, or turn right. As configured for
+this simulation, left- and right-turning vehicles do not wait for traffic lights
+and may overlap other vehicles while turning.
+
+Press a pedestrian button to send a request for that direction. The button shows
+`WAIT` until the controller serves it and `WALK` while people are crossing.
 
 ## Troubleshooting
 

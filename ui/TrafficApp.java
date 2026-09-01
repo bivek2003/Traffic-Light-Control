@@ -93,7 +93,7 @@ public class TrafficApp extends Application {
 
         root = new VBox(22);
         root.setPadding(new Insets(24, 22, 28, 22));
-        root.getChildren().addAll(header(), body());
+        root.getChildren().add(body());
         style(root, () -> root.setBackground(Theme.fill(theme.ground)));
 
         stage.setTitle("Traffic Light Control");
@@ -193,7 +193,7 @@ public class TrafficApp extends Application {
         stage.setPadding(new Insets(14));
         style(stage, () -> stage.setBackground(Theme.fill(theme.surface)));
 
-        VBox panel = new VBox(panelHead("INTERSECTION VIEW", phaseLabel), stage, controls());
+        VBox panel = new VBox(panelHead("INTERSECTION VIEW", phaseLabel), stage);
         panel(panel);
         return panel;
     }
@@ -302,10 +302,28 @@ public class TrafficApp extends Application {
     // ---- rail -----------------------------------------------------------
 
     private VBox rail() {
-        VBox rail = new VBox(22, headsPanel(), pedestrianPanel(), logPanel());
+        VBox rail = new VBox(22, detectorPanel(), pedestrianPanel());
         rail.setPrefWidth(330);
         rail.setMinWidth(310);
         return rail;
+    }
+
+    private VBox detectorPanel() {
+        CheckBox detector = new CheckBox("Check detector");
+        detector.setFont(Theme.MONO_BOLD);
+        Label mode = new Label("Random signal demand");
+        mode.setFont(Theme.SMALL);
+        style(detector, () -> detector.setTextFill(theme.ink));
+        style(mode, () -> mode.setTextFill(theme.inkSoft));
+        detector.selectedProperty().addListener((observable, oldValue, selected) -> {
+            sim.setDetectorChecked(selected);
+            mode.setText(selected ? "Busiest approach gets demand" : "Random signal demand");
+        });
+        VBox row = new VBox(6, detector, mode);
+        row.setPadding(new Insets(12, 13, 12, 13));
+        VBox panel = new VBox(panelHead("VEHICLE DETECTORS", null), row);
+        panel(panel);
+        return panel;
     }
 
     private VBox headsPanel() {
@@ -448,10 +466,15 @@ public class TrafficApp extends Application {
         for (char d : Simulation.DIRS) {
             String c = sim.colourOf(d);
             Circle[] three = lamps.get(d);
-            setLamp(three[0], "RED", c, Theme.RED);
-            setLamp(three[1], "AMBER", c, Theme.AMBER);
-            setLamp(three[2], "GREEN", c, Theme.GREEN);
-            headStates.get(d).setText(c);
+            if (three != null) {
+                setLamp(three[0], "RED", c, Theme.RED);
+                setLamp(three[1], "AMBER", c, Theme.AMBER);
+                setLamp(three[2], "GREEN", c, Theme.GREEN);
+            }
+            Label state = headStates.get(d);
+            if (state != null) {
+                state.setText(c);
+            }
         }
         phaseLabel.setText(sim.phaseLabel().toUpperCase());
     }
@@ -535,7 +558,7 @@ public class TrafficApp extends Application {
                     dt = 0.1;
                 }
                 if (running) {
-                    sim.advance(dt * speed.getValue());
+                    sim.advance(dt);
                     afterAdvance();
                 }
             }

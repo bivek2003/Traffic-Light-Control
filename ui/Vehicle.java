@@ -14,11 +14,20 @@ import javafx.scene.paint.Color;
  */
 public class Vehicle {
 
+    public enum Maneuver {
+        LEFT,
+        STRAIGHT,
+        RIGHT
+    }
+
     /** Direction of travel: N, S, E or W. */
     public final char dir;
 
     /** Lane 1 to 3, counted outward from the yellow centre line. */
     public final int lane;
+
+    /** Movement through the intersection. */
+    public final Maneuver maneuver;
 
     public final double length;
     public final double width = 15;
@@ -38,11 +47,17 @@ public class Vehicle {
     public boolean detectorCleared;
 
     public Vehicle(char dir, int lane, double length, double topSpeed, Color colour) {
+        this(dir, lane, length, topSpeed, colour, Maneuver.STRAIGHT);
+    }
+
+    public Vehicle(char dir, int lane, double length, double topSpeed, Color colour,
+                   Maneuver maneuver) {
         this.dir = dir;
         this.lane = lane;
         this.length = length;
         this.topSpeed = topSpeed;
         this.colour = colour;
+        this.maneuver = maneuver;
         this.t = -length;
         this.speed = 0;
     }

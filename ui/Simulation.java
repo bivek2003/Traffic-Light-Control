@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
@@ -73,6 +74,8 @@ public class Simulation {
     public static final double STOP_T = JUNCTION_T - BAR_FAR;
     /** A vehicle is finished once it travels this far. */
     public static final double EXIT_T = 940;
+    private static final double TURN_START_T = STOP_T;
+    private static final double TURN_END_T = JUNCTION_T + 120;
 
     public static final char[] DIRS = {'N', 'S', 'E', 'W'};
 
@@ -87,6 +90,53 @@ public class Simulation {
             case 'S' -> new double[]{C - off, -70 + t, 90};
             case 'E' -> new double[]{-70 + t, C + off, 0};
             default  -> new double[]{870 - t, C - off, 180};
+        };
+    }
+
+    /** Places a vehicle on either its straight path or a curved turn path. */
+    public static double[] place(Vehicle vehicle) {
+        if (vehicle.maneuver == Vehicle.Maneuver.STRAIGHT || vehicle.t <= TURN_START_T) {
+            return place(vehicle.dir, vehicle.t, vehicle.lane);
+        }
+
+        char exitDirection = turnDirection(vehicle.dir, vehicle.maneuver);
+        int exitLane = vehicle.maneuver == Vehicle.Maneuver.RIGHT ? 3 : 1;
+        if (vehicle.t >= TURN_END_T) {
+            double exitT = TURN_END_T + (vehicle.t - TURN_END_T);
+            return place(exitDirection, exitT, exitLane);
+        }
+
+        double[] start = place(vehicle.dir, TURN_START_T, vehicle.lane);
+        double[] end = place(exitDirection, TURN_END_T, exitLane);
+        double controlX = vehicle.dir == 'N' || vehicle.dir == 'S' ? start[0] : end[0];
+        double controlY = vehicle.dir == 'N' || vehicle.dir == 'S' ? end[1] : start[1];
+        double progress = (vehicle.t - TURN_START_T) / (TURN_END_T - TURN_START_T);
+        double inverse = 1.0 - progress;
+        double x = inverse * inverse * start[0]
+                + 2 * inverse * progress * controlX + progress * progress * end[0];
+        double y = inverse * inverse * start[1]
+                + 2 * inverse * progress * controlY + progress * progress * end[1];
+        double dx = 2 * inverse * (controlX - start[0])
+                + 2 * progress * (end[0] - controlX);
+        double dy = 2 * inverse * (controlY - start[1])
+                + 2 * progress * (end[1] - controlY);
+        return new double[]{x, y, Math.toDegrees(Math.atan2(dy, dx))};
+    }
+
+    private static char turnDirection(char incoming, Vehicle.Maneuver maneuver) {
+        if (maneuver == Vehicle.Maneuver.RIGHT) {
+            return switch (incoming) {
+                case 'N' -> 'E';
+                case 'S' -> 'W';
+                case 'E' -> 'S';
+                default -> 'N';
+            };
+        }
+        return switch (incoming) {
+            case 'N' -> 'W';
+            case 'S' -> 'E';
+            case 'E' -> 'N';
+            default -> 'S';
         };
     }
 
@@ -129,6 +179,9 @@ public class Simulation {
     private double spawnClock = 0;
     private double density = 1.0;
     private boolean deviceControlled;
+    private boolean detectorChecked;
+    private double demandClock;
+    private String activeDetectorId;
 
     public Simulation(MessageSink sink) {
         this.sink = sink;
@@ -208,6 +261,27 @@ public class Simulation {
     public List<Vehicle> vehicles()       { return vehicles; }
     public void setDensity(double d)      { this.density = d; }
 
+    /** Adds a randomly configured vehicle at one approach's detector. */
+    public Vehicle triggerDetector(char dir) {
+        if (dir != 'N' && dir != 'S' && dir != 'E' && dir != 'W') {
+            throw new IllegalArgumentException("unknown detector direction: " + dir);
+        }
+        int lane = 1 + random.nextInt(3);
+        Vehicle vehicle = newVehicle(dir, lane);
+        vehicle.t = STOP_T - 50 - vehicle.length / 2;
+        vehicles.add(vehicle);
+        return vehicle;
+    }
+
+    public void setDetectorChecked(boolean checked) {
+        if (detectorChecked == checked) {
+            return;
+        }
+        clearActiveDetector();
+        detectorChecked = checked;
+        demandClock = 0;
+    }
+
     public void useDeviceControl() {
         deviceControlled = true;
     }
@@ -229,6 +303,102 @@ public class Simulation {
         movePedestrians(dt);
         maybeSpawn(dt);
         moveVehicles(dt);
+        updateSignalDemand(dt);
+    }
+
+    private void updateSignalDemand(double dt) {
+        demandClock -= dt;
+        if (demandClock > 0) {
+            return;
+        }
+        demandClock = detectorChecked ? 1.0 : 6.0;
+
+        String nextDetector = detectorChecked
+                ? busiestDetector() : randomDetectorInOpposingGroup();
+        if (nextDetector == null) {
+            clearActiveDetector();
+            return;
+        }
+        if (activeDetectorId != null && !activeDetectorId.equals(nextDetector)) {
+            emitDetectorEvent(activeDetectorId, "VEHICLE_CLEARED");
+        }
+        activeDetectorId = nextDetector;
+        emitDetectorEvent(activeDetectorId, "VEHICLE_DETECTED");
+    }
+
+    private String busiestDetector() {
+        int[][] counts = new int[DIRS.length][3];
+        for (Vehicle vehicle : vehicles) {
+            double gap = STOP_T - vehicle.front();
+            if (gap <= 0 || gap > 250) {
+                continue;
+            }
+            int direction = directionIndex(vehicle.dir);
+            counts[direction][vehicle.lane - 1]++;
+        }
+
+        int busiestDirection = -1;
+        int busiestCount = 0;
+        for (int direction = 0; direction < counts.length; direction++) {
+            int total = counts[direction][0] + counts[direction][1] + counts[direction][2];
+            if (total > busiestCount) {
+                busiestCount = total;
+                busiestDirection = direction;
+            } else if (total == busiestCount && total > 0 && random.nextBoolean()) {
+                busiestDirection = direction;
+            }
+        }
+        if (busiestDirection < 0) {
+            return null;
+        }
+
+        int busiestLane = 0;
+        for (int lane = 1; lane < 3; lane++) {
+            if (counts[busiestDirection][lane] > counts[busiestDirection][busiestLane]) {
+                busiestLane = lane;
+            }
+        }
+        return detectorId(DIRS[busiestDirection], busiestLane + 1);
+    }
+
+    private String randomDetectorInOpposingGroup() {
+        char direction;
+        if (activeDetectorId == null) {
+            direction = DIRS[random.nextInt(DIRS.length)];
+        } else {
+            char activeDirection = directionFromId(activeDetectorId);
+            char[] opposing = activeDirection == 'N' || activeDirection == 'S'
+                    ? new char[]{'E', 'W'} : new char[]{'N', 'S'};
+            direction = opposing[random.nextInt(opposing.length)];
+        }
+        return detectorId(direction, 1 + random.nextInt(3));
+    }
+
+    private void clearActiveDetector() {
+        if (activeDetectorId != null) {
+            emitDetectorEvent(activeDetectorId, "VEHICLE_CLEARED");
+            activeDetectorId = null;
+        }
+    }
+
+    private void emitDetectorEvent(String detectorId, String action) {
+        char direction = directionFromId(detectorId);
+        int lane = detectorId.charAt(detectorId.length() - 1) - '0';
+        emit("EVENT", detectorId, "controller", action,
+                roadName(direction) + "_LANE_" + lane, true);
+    }
+
+    private String detectorId(char direction, int lane) {
+        return "detector-" + roadName(direction).toLowerCase(Locale.ROOT) + "-" + lane;
+    }
+
+    private int directionIndex(char direction) {
+        for (int index = 0; index < DIRS.length; index++) {
+            if (DIRS[index] == direction) {
+                return index;
+            }
+        }
+        throw new IllegalArgumentException("unknown direction: " + direction);
     }
 
     /**
@@ -401,7 +571,7 @@ public class Simulation {
             if (v.dir != side) {
                 continue;
             }
-            double[] q = place(v.dir, v.t, v.lane);
+            double[] q = place(v);
             double pos = acrossNS ? q[1] : q[0];
             if (pos > low && pos < high) {
                 return false;
@@ -470,7 +640,10 @@ public class Simulation {
         javafx.scene.paint.Color colour = random.nextDouble() < 0.12
                 ? Palette.CAR_ACCENT
                 : Palette.CAR[random.nextInt(Palette.CAR.length)];
-        return new Vehicle(dir, lane, length, top, colour);
+        double choice = random.nextDouble();
+        Vehicle.Maneuver maneuver = choice < 0.25 ? Vehicle.Maneuver.LEFT
+                : choice < 0.50 ? Vehicle.Maneuver.RIGHT : Vehicle.Maneuver.STRAIGHT;
+        return new Vehicle(dir, lane, length, top, colour, maneuver);
     }
 
     private void maybeSpawn(double dt) {
@@ -525,21 +698,7 @@ public class Simulation {
     private void moveVehicles(double dt) {
         for (Vehicle v : vehicles) {
             double frontGap = STOP_T - v.front();
-
-            if (!v.counted && frontGap < 70 && frontGap > 0) {
-                v.counted = true;
-                emit("EVENT",
-                     "detector-" + Character.toLowerCase(v.dir) + "-" + v.lane,
-                     "controller", "VEHICLE_DETECTED",
-                     roadName(v.dir) + "_LANE_" + v.lane, true);
-            }
-            if (v.counted && !v.detectorCleared && frontGap < -20) {
-                v.detectorCleared = true;
-                emit("EVENT",
-                     "detector-" + Character.toLowerCase(v.dir) + "-" + v.lane,
-                     "controller", "VEHICLE_CLEARED",
-                     roadName(v.dir) + "_LANE_" + v.lane, true);
-            }
+            boolean turning = v.maneuver != Vehicle.Maneuver.STRAIGHT;
 
             // How far this vehicle may advance this frame.
             //
@@ -548,12 +707,14 @@ public class Simulation {
             // as already across on the next frame, and accelerates through
             // the red.
             double room = Double.MAX_VALUE;
-            if (frontGap > 0 && !mayProceed(v.dir, frontGap)) {
+            if (!turning && frontGap > 0 && !mayProceed(v.dir, frontGap)) {
                 room = Math.max(0, frontGap - 0.8);
             }
-            double ahead = leaderGap(v) - 9;
-            if (ahead < room) {
-                room = ahead;
+            if (!turning) {
+                double ahead = leaderGap(v) - 9;
+                if (ahead < room) {
+                    room = ahead;
+                }
             }
 
             double target = room <= 0.5 ? 0 : v.topSpeed;

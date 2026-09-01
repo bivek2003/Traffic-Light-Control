@@ -199,7 +199,7 @@ public class IntersectionView extends Canvas {
     }
 
     private void drawVehicle(GraphicsContext g, Vehicle v) {
-        double[] p = place(v.dir, v.t, v.lane);
+        double[] p = Simulation.place(v);
         double len = v.length, wid = v.width;
 
         g.save();
