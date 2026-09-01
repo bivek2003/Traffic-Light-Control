@@ -1,5 +1,9 @@
 package trafficcontrol.controller;
 
+/*
+@author Bivek Panthi
+*/
+
 public enum SignalGroup {
     NORTH_SOUTH,
     EAST_WEST;

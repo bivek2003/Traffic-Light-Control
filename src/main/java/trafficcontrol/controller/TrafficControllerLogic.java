@@ -1,5 +1,9 @@
 package trafficcontrol.controller;
 
+/*
+@author Bivek Panthi
+*/
+
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -10,10 +14,6 @@ import java.util.Set;
 import trafficcontrol.protocol.Message;
 import trafficcontrol.protocol.MessageType;
 
-/**
- * Testable traffic-signal state machine. All transitions pass through yellow
- * and an all-red interval, so conflicting approaches are never green together.
- */
 public final class TrafficControllerLogic {
     public enum Stage {
         ALL_RED,

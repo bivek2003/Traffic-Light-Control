@@ -1,5 +1,9 @@
 package trafficcontrol.controller;
 
+/*
+@author Bivek Panthi
+*/
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -15,7 +19,6 @@ import trafficcontrol.protocol.Message;
 import trafficcontrol.protocol.MessageType;
 import trafficcontrol.protocol.ProtocolException;
 
-/** Socket client and executable entry point for Member 1's traffic controller. */
 public final class TrafficController implements AutoCloseable {
     public static final String COMPONENT_ID = "controller";
 

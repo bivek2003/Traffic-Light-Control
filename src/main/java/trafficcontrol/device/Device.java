@@ -1,6 +1,9 @@
 package trafficcontrol.device;
 
-/** Shared contract implemented by every simulated field device. */
+/*
+@author Bivek Panthi
+*/
+
 public interface Device {
     String getId();
 

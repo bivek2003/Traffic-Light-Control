@@ -1,6 +1,9 @@
 package trafficcontrol.protocol;
 
-/** The only message types permitted by the socket protocol. */
+/*
+@author Bivek Panthi
+*/
+
 public enum MessageType {
     REGISTER,
     COMMAND,

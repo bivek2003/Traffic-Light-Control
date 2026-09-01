@@ -1,6 +1,9 @@
 package trafficcontrol.protocol;
 
-/** Indicates that a line does not satisfy the shared five-field protocol. */
+/*
+@author Bivek Panthi
+*/
+
 public class ProtocolException extends Exception {
     private static final long serialVersionUID = 1L;
 
