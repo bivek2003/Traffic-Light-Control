@@ -93,13 +93,20 @@ able to read it.
 
 ## Tests
 
-`src/test/java/multiplexor/MessageTest.java` checks the message parsing. It does
-not open any sockets so it runs straight away:
+Two test classes, both plain Java with no test library needed.
+
+`MessageTest` checks the message parsing. It does not open any sockets so it
+runs straight away:
 
 ```sh
 java -ea -cp out multiplexor.MessageTest
 ```
 
-## Still to do
+`MultiplexorTest` checks the delivering and the ERROR replies. It starts a
+Multiplexor on port 5599 and connects to it the same way a real program would:
 
-- [ ] tests for the routing and the ERROR replies
+```sh
+java -ea -cp out multiplexor.MultiplexorTest
+```
+
+Both stop with a message saying which check failed if something is wrong.
