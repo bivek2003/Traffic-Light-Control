@@ -2,6 +2,7 @@ package ui;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -27,10 +28,14 @@ import javafx.scene.shape.Circle;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import trafficcontrol.device.DeviceSimulator;
+import trafficcontrol.protocol.ProtocolException;
 
 /**
  * The traffic display.
@@ -52,6 +57,7 @@ public class TrafficApp extends Application {
 
     private Simulation sim;
     private IntersectionView view;
+    private DeviceSimulator deviceSimulator;
     private Theme theme = Theme.light();
 
     /**
@@ -78,6 +84,7 @@ public class TrafficApp extends Application {
     @Override
     public void start(Stage stage) {
         sim = new Simulation(this::onMessage);
+        sim.useDeviceControl();
 
         // Fill the screen the machine actually has, rather than a fixed guess.
         double usable = Screen.getPrimary().getVisualBounds().getHeight() - CHROME;
@@ -98,7 +105,40 @@ public class TrafficApp extends Application {
         refreshHeads();
         refreshPedestrians();
         view.render();
+        startDevices();
         startLoop();
+    }
+
+    private void startDevices() {
+        List<String> args = getParameters().getRaw();
+        String host = args.isEmpty() ? "localhost" : args.get(0);
+        int port;
+        try {
+            port = args.size() < 2 ? 5050 : Integer.parseInt(args.get(1));
+        } catch (NumberFormatException error) {
+            addLog("ERROR|javafx|device-hub|INVALID_PORT|" + args.get(1), false);
+            return;
+        }
+
+        deviceSimulator = new DeviceSimulator();
+        deviceSimulator.addStateListener(this::onDeviceState);
+        try {
+            deviceSimulator.start(host, port);
+            addLog("STATE|device-hub|javafx|CONNECTED|" + host + ":" + port, false);
+        } catch (IOException | ProtocolException error) {
+            deviceSimulator.close();
+            deviceSimulator = null;
+            addLog("ERROR|device-hub|javafx|CONNECTION_FAILED|" + error.getMessage(), false);
+        }
+    }
+
+    private void onDeviceState(String id, String type, String state) {
+        Platform.runLater(() -> {
+            sim.applyDeviceState(id, type, state);
+            addLog("STATE|" + id + "|javafx|" + type + "|" + state,
+                    "VEHICLE_DETECTOR".equals(type));
+            afterAdvance();
+        });
     }
 
     /** Registers a painting step and runs it once, so nodes start styled. */
@@ -448,10 +488,27 @@ public class TrafficApp extends Application {
 
     private void onMessage(String type, String src, String dst,
                            String action, String value, boolean detector) {
+        if ("EVENT".equals(type) && deviceSimulator != null) {
+            try {
+                if ("PEDESTRIAN_REQUEST".equals(action)) {
+                    deviceSimulator.pressPedestrian(src);
+                } else if ("VEHICLE_DETECTED".equals(action)) {
+                    deviceSimulator.vehicleDetected(src);
+                } else if ("VEHICLE_CLEARED".equals(action)) {
+                    deviceSimulator.vehicleCleared(src);
+                }
+            } catch (IllegalArgumentException | IllegalStateException error) {
+                addLog("ERROR|javafx|device-hub|EVENT_FAILED|" + error.getMessage(), false);
+            }
+        }
+        addLog(type + "|" + src + "|" + dst + "|" + action + "|" + value, detector);
+    }
+
+    private void addLog(String line, boolean detector) {
         if (detector && (showDetectors == null || !showDetectors.isSelected())) {
             return;
         }
-        logLines.add(type + "|" + src + "|" + dst + "|" + action + "|" + value);
+        logLines.add(line);
         while (logLines.size() > LOG_LIMIT) {
             logLines.remove(0);
         }
@@ -493,5 +550,12 @@ public class TrafficApp extends Application {
 
     public static void main(String[] args) {
         launch(args);
+    }
+
+    @Override
+    public void stop() {
+        if (deviceSimulator != null) {
+            deviceSimulator.close();
+        }
     }
 }
