@@ -1,6 +1,7 @@
 package trafficcontrol.controller;
 
 import java.util.Objects;
+import java.util.EnumSet;
 
 // Tracks emergency entry, service, and exit; it does not send light commands.
 public final class EmergencyMode {
@@ -10,12 +11,35 @@ public final class EmergencyMode {
     }
 
     private final ControllerConfig config;
+    private final EmergencyRequests requests = new EmergencyRequests();
     private Stage stage = Stage.IDLE;
     private Direction direction;
     private long stageStartedAt;
 
     public EmergencyMode(ControllerConfig config) {
         this.config = Objects.requireNonNull(config);
+    }
+
+    // Use this entry point for integration, with a full snapshot on every update.
+    public void update(long now, EnumSet<Direction> detected,
+            boolean pedestrianCrossing, boolean anyFaultActive) {
+        Objects.requireNonNull(detected);
+        requests.update(detected);
+        setFault(anyFaultActive, now);
+        if (stage == Stage.IDLE) {
+            Direction next = requests.nextDirection();
+            if (next != null) {
+                start(next, now, pedestrianCrossing);
+            }
+        } else {
+            advance(now, detected.contains(direction), pedestrianCrossing);
+        }
+        // A completed exit stays IDLE until the next update selects a request.
+    }
+
+    // Keep other modes stopped while a request waits or clearance is unfinished.
+    public boolean requiresControl() {
+        return stage != Stage.IDLE || requests.nextDirection() != null;
     }
 
     // An active pedestrian crossing already has all traffic stopped at red.

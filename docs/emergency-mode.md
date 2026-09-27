@@ -6,13 +6,22 @@
 - [x] Hold emergency green until detection clears, then time yellow and all-red exit.
 - [x] Time entry clearance and wait for an active pedestrian crossing to finish.
 - [x] Interrupt every emergency stage for a fault and time all-red recovery.
+- [x] Connect the request queue to mode updates and test consecutive emergencies.
 - [ ] Connect detector events and shared controller outputs.
-- [ ] Test timing, pedestrian coordination, faults, and mode handoff.
+- [x] Test local timing, crossing status, faults, and control-release decisions.
+- [ ] Verify live detector, light, pedestrian, and normal/night integration.
 
-EmergencyRequests is a first step, not a working emergency mode.
-Call update with a complete detector snapshot whenever a detector changes.
-The next direction is only a candidate; it must not bypass clearance.
-Keep the served direction separately during yellow and all-red transitions.
+For integration, use EmergencyMode.update(now, detected, pedestrianCrossing, anyFaultActive).
+The mode owns its EmergencyRequests queue and retains the served direction during exit.
+Pass a full EnumSet of active detectors on each event and timer update, even during faults.
+Use one controller thread or lock for updates and reading results.
+Do not mix this entry point with direct start, advance, or setFault calls.
+Those lower-level methods remain available for the individual state tests.
+After update, read getStage and getDirection to apply the agreed shared output commands.
+Check requiresControl before handing traffic back to Bivek's mode selector.
+It stays true during faults, clearance, and the IDLE gap before another waiting request.
+When it becomes false, Bivek selects normal/night mode from the current clock.
+Consecutive emergencies repeat entry clearance; keep already-red lights red during that entry.
 
 EmergencyMode tracks the served direction until exit clearance finishes.
 Call start(direction, now, pedestrianCrossing) once for a selected request.
@@ -26,7 +35,7 @@ The integrator must retain that previous traffic group when applying entry comma
 IDLE after clearance means the controller may select another mode or waiting request.
 Apply each stage's light pattern before the next update; late updates do not skip all-red.
 Timing comes from ControllerConfig; tests use the proposed 4-second / 5-second values.
-Neither class is wired into the live controller yet.
+The emergency module is not wired into the live controller yet.
 Before start or advance, call setFault(anyFaultActive, now) with combined system fault status.
 FAULT requires the shared output code to flash all traffic red and show pedestrian Stays.
 Faults discard the served direction; clearing all faults starts full all-red recovery.
