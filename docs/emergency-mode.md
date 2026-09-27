@@ -5,6 +5,7 @@
 - [x] Remove cleared requests and ignore repeated active detections.
 - [x] Hold emergency green until detection clears, then time yellow and all-red exit.
 - [x] Time entry clearance and wait for an active pedestrian crossing to finish.
+- [x] Interrupt every emergency stage for a fault and time all-red recovery.
 - [ ] Connect detector events and shared controller outputs.
 - [ ] Test timing, pedestrian coordination, faults, and mode handoff.
 
@@ -25,7 +26,13 @@ The integrator must retain that previous traffic group when applying entry comma
 IDLE after clearance means the controller may select another mode or waiting request.
 Apply each stage's light pattern before the next update; late updates do not skip all-red.
 Timing comes from ControllerConfig; tests use the proposed 4-second / 5-second values.
-Neither class is wired into the live controller yet. Fault handling is still unfinished.
+Neither class is wired into the live controller yet.
+Before start or advance, call setFault(anyFaultActive, now) with combined system fault status.
+FAULT requires the shared output code to flash all traffic red and show pedestrian Stays.
+Faults discard the served direction; clearing all faults starts full all-red recovery.
+After recovery reaches IDLE, refresh detectors and select again; never restore old green.
+Repeated clear reports do not restart clearance, but a new fault interrupts recovery.
+Flashing commands and live fault reporting remain integration work.
 
 Before integration, coordinate with Bivek on mode hooks, detector messages,
 lane-level outputs, and the proposed 4-second yellow / 5-second all-red timing.

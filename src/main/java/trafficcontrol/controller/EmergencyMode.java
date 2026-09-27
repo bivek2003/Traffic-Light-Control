@@ -6,7 +6,7 @@ import java.util.Objects;
 public final class EmergencyMode {
     public enum Stage {
         IDLE, WAIT_FOR_PEDESTRIAN, ENTRY_YELLOW, ENTRY_ALL_RED,
-        GREEN, EXIT_YELLOW, EXIT_ALL_RED
+        GREEN, EXIT_YELLOW, EXIT_ALL_RED, FAULT
     }
 
     private final ControllerConfig config;
@@ -58,6 +58,18 @@ public final class EmergencyMode {
                 && now - stageStartedAt >= config.getAllRedMillis()) {
             stage = Stage.IDLE;
             direction = null;
+        }
+    }
+
+    // The controller reports whether ANY fault is active, before advancing time.
+    public void setFault(boolean active, long now) {
+        if (active) {
+            stage = Stage.FAULT;
+            direction = null;
+        } else if (stage == Stage.FAULT) {
+            // Recovery must finish all-red before the controller selects again.
+            stage = Stage.EXIT_ALL_RED;
+            stageStartedAt = now;
         }
     }
 
