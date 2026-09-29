@@ -17,3 +17,7 @@ for test in ui.LabObjectsTest ui.SimulationIntegrationTest ui.RightTurnPathTest 
   multiplexor.MessageTest multiplexor.MultiplexorTest; do
   java --module-path "$FX" --add-modules javafx.controls -ea -cp out "$test"
 done
+if [ "${1:-}" = "--gui" ]; then
+  java --module-path "$FX" --add-modules javafx.controls \
+    --enable-native-access=javafx.graphics -ea -cp out ui.ControllerGuiTest
+fi

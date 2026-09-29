@@ -37,7 +37,7 @@ java --module-path $env:PATH_TO_FX --add-modules javafx.controls -cp out control
 
 - `bash ui/build.sh` compiles without opening a window.
 - `bash ui/test.sh` runs object/access, simulation and legacy regression checks.
-- Timed GUI scenarios are tested locally; their runner is pending the next batch.
+- `bash ui/test.sh --gui` also runs the timed GUI scenarios (about six minutes).
 - Missing `javafx.controls`: check `PATH_TO_FX` points at the SDK's `lib`.
 - Native-library/graphics startup error: check SDK operating system and CPU.
 - Class version error: check Java 17+ and a compatible JavaFX 17 SDK.

@@ -52,8 +52,7 @@ controller exits between steps. No real hardware is connected by this runner.
 
 `ui.LabObjectsTest` checks output guards, startup, road/lane mapping, latching,
 selection priority, access signatures, red-light compliance and protected lefts.
-The local `ui.ControllerGuiTest` (not yet included in the pushed commits) uses
-the actual window, GUI buttons, shared API and real
+`ui.ControllerGuiTest` uses the actual window, GUI buttons, shared API and real
 timings for the normal cycle, each night choice, repeated pedestrian requests,
 simultaneous emergency/pedestrian requests, both emergency roads, sensor release,
 the stuck-sensor cap, return to normal, and safe GUI close. It checks observed
