@@ -11,13 +11,27 @@ public final class EmergencyMode {
     }
 
     private final ControllerConfig config;
+    private final long maximumHoldMillis;
     private final EmergencyRequests requests = new EmergencyRequests();
     private Stage stage = Stage.IDLE;
     private Direction direction;
     private long stageStartedAt;
 
+    // Team plan defaults; move these to the shared Config during integration.
+    public EmergencyMode() {
+        this(new ControllerConfig(30_000, 30_000, 4_000, 2_000));
+    }
+
     public EmergencyMode(ControllerConfig config) {
+        this(config, 60_000);
+    }
+
+    public EmergencyMode(ControllerConfig config, long maximumHoldMillis) {
         this.config = Objects.requireNonNull(config);
+        if (maximumHoldMillis <= 0) {
+            throw new IllegalArgumentException("emergency maximum hold must be positive");
+        }
+        this.maximumHoldMillis = maximumHoldMillis;
     }
 
     // Use this entry point for integration, with a full snapshot on every update.
@@ -32,7 +46,7 @@ public final class EmergencyMode {
                 start(next, now, pedestrianCrossing);
             }
         } else {
-            advance(now, detected.contains(direction), pedestrianCrossing);
+            advance(now, roadDetected(detected), pedestrianCrossing);
         }
         // A completed exit stays IDLE until the next update selects a request.
     }
@@ -40,6 +54,17 @@ public final class EmergencyMode {
     // Keep other modes stopped while a request waits or clearance is unfinished.
     public boolean requiresControl() {
         return stage != Stage.IDLE || requests.nextDirection() != null;
+    }
+
+    // Either approach on the selected road keeps its through phase requested.
+    private boolean roadDetected(EnumSet<Direction> detected) {
+        SignalGroup road = getRoad();
+        for (Direction approaching : detected) {
+            if (approaching.group() == road) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // An active pedestrian crossing already has all traffic stopped at red.
@@ -52,7 +77,7 @@ public final class EmergencyMode {
         stageStartedAt = now;
     }
 
-    // detected is the current reading for the served direction, not any direction.
+    // detected means an emergency is present on either approach of the served road.
     public void advance(long now, boolean detected, boolean pedestrianCrossing) {
         if (stage == Stage.WAIT_FOR_PEDESTRIAN && !pedestrianCrossing) {
             stage = Stage.ENTRY_ALL_RED;
@@ -67,11 +92,13 @@ public final class EmergencyMode {
             } else if (now - stageStartedAt >= config.getAllRedMillis()) {
                 // A detector that cleared during entry must never receive green.
                 stage = detected ? Stage.GREEN : Stage.IDLE;
+                stageStartedAt = now;
                 if (!detected) {
                     direction = null;
                 }
             }
-        } else if (stage == Stage.GREEN && !detected) {
+        } else if (stage == Stage.GREEN
+                && (!detected || now - stageStartedAt >= maximumHoldMillis)) {
             stage = Stage.EXIT_YELLOW;
             stageStartedAt = now;
         } else if (stage == Stage.EXIT_YELLOW
@@ -103,5 +130,10 @@ public final class EmergencyMode {
 
     public Direction getDirection() {
         return direction;
+    }
+
+    // The lab supports NS/EW patterns, not one emergency lane at a time.
+    public SignalGroup getRoad() {
+        return direction == null ? null : direction.group();
     }
 }

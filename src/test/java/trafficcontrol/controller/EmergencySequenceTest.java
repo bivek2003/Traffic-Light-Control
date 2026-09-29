@@ -45,13 +45,14 @@ public final class EmergencySequenceTest {
         EmergencyMode mode = createMode();
         EnumSet<Direction> detected = EnumSet.allOf(Direction.class);
         long now = 0;
-        for (Direction direction : Direction.values()) {
+        Direction[] approaches = {Direction.NORTH, Direction.EAST};
+        for (Direction direction : approaches) {
             mode.update(now, detected, false, false);
-            check(mode.getDirection() == direction, "simultaneous order must be N S E W");
+            check(mode.getRoad() == direction.group(), "wrong road selected");
             mode.update(now + 4_000, detected, false, false);
             mode.update(now + 9_000, detected, false, false);
             check(mode.getStage() == EmergencyMode.Stage.GREEN, "entry did not reach green");
-            detected.remove(direction);
+            detected.removeIf(approach -> approach.group() == direction.group());
             mode.update(now + 10_000, detected, false, false);
             mode.update(now + 14_000, detected, false, false);
             mode.update(now + 19_000, detected, false, false);
