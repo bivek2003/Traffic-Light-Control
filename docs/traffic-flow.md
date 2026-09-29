@@ -30,8 +30,11 @@ This is an intentional change from the plan's strict night priority. The method
 signatures, emergency/pedestrian priority and clearance timings are unchanged.
 Lane L moves only on LEFT GREEN, not on the same road's through green.
 
-Every approach now has a horizontal signal head with a separate colored left
-arrow and three through lamps. During a left phase the through lamps stay red;
+Every signal head spans its approach's lanes with exactly three indicators:
+a left arrow over L and two circles over C/R. Each indicator changes color.
+The circles share the through signal, as required by the lab's whole-road API.
+North/south heads are horizontal on screen;
+east/west heads are rotated 90 degrees. During a left phase the through lamps stay red;
 during a through phase the arrow stays red. Yellow/all-red clearance and the
 existing phase order are unchanged.
 

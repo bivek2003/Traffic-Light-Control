@@ -19,6 +19,10 @@ import javax.imageio.ImageIO;
 public final class SignalHeadTest {
     public static void main(String[] args) throws Exception {
         Simulation sim = new Simulation(null);
+        check(IntersectionView.headRotation('N') == 0, "top head must span north/south lanes");
+        check(IntersectionView.headRotation('S') == 180, "bottom arrow must align with its left lane");
+        check(IntersectionView.headRotation('E') == 90, "east head must span east/west lanes");
+        check(IntersectionView.headRotation('W') == -90, "west head must span east/west lanes");
         for (Phase phase : Phase.values()) {
             for (TrafficPattern pattern : new TrafficPattern[]{phase.green, phase.yellow,
                     TrafficPattern.ALL_RED}) {
@@ -46,8 +50,9 @@ public final class SignalHeadTest {
                 grid.setPadding(new Insets(12));
                 grid.setHgap(12);
                 grid.setVgap(12);
-                TrafficPattern[] patterns = {TrafficPattern.NS_LEFT_GREEN, TrafficPattern.NS_LEFT_YELLOW,
-                        TrafficPattern.ALL_RED, TrafficPattern.NS_GREEN};
+                TrafficPattern[] patterns = {TrafficPattern.NS_LEFT_GREEN, TrafficPattern.EW_LEFT_GREEN,
+                        TrafficPattern.NS_GREEN, TrafficPattern.EW_GREEN,
+                        TrafficPattern.EW_YELLOW, TrafficPattern.ALL_RED};
                 for (int i = 0; i < patterns.length; i++) {
                     Simulation sim = new Simulation(null);
                     sim.vehicles().clear();

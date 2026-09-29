@@ -239,13 +239,19 @@ public class IntersectionView extends Canvas {
         };
     }
 
+    static double headRotation(char dir) {
+        return dir == 'E' ? 90 : dir == 'W' ? -90 : dir == 'S' ? 180 : 0;
+    }
+
     private void drawHead(GraphicsContext g, char dir) {
         double[] p = headPos(dir);
         String state = sim.throughColourOf(dir);
-        double w = 88, h = 24, r = 7;
+        double w = 78, h = 24, r = 7;
 
         g.save();
         g.translate(p[0], p[1]);
+        // The bar spans the lanes, rather than following the road's direction.
+        g.rotate(headRotation(dir));
 
         g.setFill(Color.rgb(0, 0, 0, 0.4));
         g.fillRoundRect(-w / 2 + 1.5, -h / 2 + 2, w, h, 8, 8);
@@ -256,31 +262,24 @@ public class IntersectionView extends Canvas {
         g.setLineWidth(1);
         g.strokeRoundRect(-w / 2, -h / 2, w, h, 8, 8);
 
-        // The arrow stays visible, changing red/yellow/green independently of the circles.
+        // One indicator per lane: left arrow, center circle, right circle.
         g.setFill(Palette.LAMP_OFF);
-        g.fillOval(-39, -9, 18, 18);
+        g.fillOval(-35, -9, 18, 18);
         g.setStroke(Palette.forState(sim.leftColourOf(dir)));
         g.setLineWidth(3);
-        g.strokeLine(-36, 0, -24, 0);
-        g.strokeLine(-36, 0, -30, -6);
-        g.strokeLine(-36, 0, -30, 6);
-        g.setStroke(Color.rgb(255, 255, 255, 0.25));
-        g.setLineWidth(1);
-        g.strokeLine(-19, -9, -19, 9);
+        g.strokeLine(-32, 0, -20, 0);
+        g.strokeLine(-32, 0, -26, -6);
+        g.strokeLine(-32, 0, -26, 6);
 
-        String[] order = {"RED", "AMBER", "GREEN"};
-        for (int i = 0; i < 3; i++) {
-            double cx = -9 + i * 21;
+        Color tint = Palette.forState(state);
+        for (int i = 0; i < 2; i++) {
+            double cx = i * LANE;
             double cy = 0;
-            boolean lit = order[i].equals(state);
-            Color tint = Palette.forState(order[i]);
 
-            if (lit) {
-                // Canvas has no blur, so the glow is a soft halo instead.
-                g.setFill(Color.color(tint.getRed(), tint.getGreen(), tint.getBlue(), 0.28));
-                g.fillOval(cx - r * 2.1, cy - r * 2.1, r * 4.2, r * 4.2);
-            }
-            g.setFill(lit ? tint : Palette.LAMP_OFF);
+            // Each circle changes color instead of having separate red/yellow/green bulbs.
+            g.setFill(Color.color(tint.getRed(), tint.getGreen(), tint.getBlue(), 0.28));
+            g.fillOval(cx - r * 2.1, cy - r * 2.1, r * 4.2, r * 4.2);
+            g.setFill(tint);
             g.fillOval(cx - r, cy - r, r * 2, r * 2);
         }
         g.restore();
@@ -296,7 +295,8 @@ public class IntersectionView extends Canvas {
         g.setTextAlign(TextAlignment.CENTER);
         for (char d : Simulation.DIRS) {
             double[] hp = headPos(d);
-            double ty = (d == 'S') ? hp[1] + 28 : hp[1] - 20;
+            double lift = d == 'E' || d == 'W' ? 54 : 20;
+            double ty = (d == 'S') ? hp[1] + 28 : hp[1] - lift;
             g.fillText(Simulation.headId(d), hp[0], ty);
         }
 
