@@ -232,24 +232,26 @@ public class IntersectionView extends Canvas {
 
     private static double[] headPos(char dir) {
         return switch (dir) {
-            case 'N' -> new double[]{C + LANE * 1.5, EDGE_A - HEAD_OUT, 1};
-            case 'S' -> new double[]{C - LANE * 1.5, EDGE_B + HEAD_OUT, 1};
-            case 'E' -> new double[]{EDGE_B + HEAD_OUT, C + LANE * 1.5, 0};
-            default  -> new double[]{EDGE_A - HEAD_OUT, C - LANE * 1.5, 0};
+            case 'N' -> new double[]{C + LANE * 1.5, EDGE_A - HEAD_OUT};
+            case 'S' -> new double[]{C - LANE * 1.5, EDGE_B + HEAD_OUT};
+            case 'E' -> new double[]{EDGE_B + HEAD_OUT, C + LANE * 1.5};
+            default  -> new double[]{EDGE_A - HEAD_OUT, C - LANE * 1.5};
         };
+    }
+
+    static double headRotation(char dir) {
+        return dir == 'E' ? 90 : dir == 'W' ? -90 : dir == 'S' ? 180 : 0;
     }
 
     private void drawHead(GraphicsContext g, char dir) {
         double[] p = headPos(dir);
-        boolean vertical = p[2] == 1;
-        String state = sim.colourOf(dir);
-
-        double lengthways = 42, across = 17, r = 5.4;
-        double w = vertical ? across : lengthways;
-        double h = vertical ? lengthways : across;
+        String state = sim.throughColourOf(dir);
+        double w = 78, h = 24, r = 7;
 
         g.save();
         g.translate(p[0], p[1]);
+        // The bar spans the lanes, rather than following the road's direction.
+        g.rotate(headRotation(dir));
 
         g.setFill(Color.rgb(0, 0, 0, 0.4));
         g.fillRoundRect(-w / 2 + 1.5, -h / 2 + 2, w, h, 8, 8);
@@ -260,20 +262,24 @@ public class IntersectionView extends Canvas {
         g.setLineWidth(1);
         g.strokeRoundRect(-w / 2, -h / 2, w, h, 8, 8);
 
-        String[] order = {"RED", "AMBER", "GREEN"};
-        for (int i = 0; i < 3; i++) {
-            double o = (i - 1) * 12.6;
-            double cx = vertical ? 0 : o;
-            double cy = vertical ? o : 0;
-            boolean lit = order[i].equals(state);
-            Color tint = Palette.forState(order[i]);
+        // One indicator per lane: left arrow, center circle, right circle.
+        g.setFill(Palette.LAMP_OFF);
+        g.fillOval(-35, -9, 18, 18);
+        g.setStroke(Palette.forState(sim.leftColourOf(dir)));
+        g.setLineWidth(3);
+        g.strokeLine(-32, 0, -20, 0);
+        g.strokeLine(-32, 0, -26, -6);
+        g.strokeLine(-32, 0, -26, 6);
 
-            if (lit) {
-                // Canvas has no blur, so the glow is a soft halo instead.
-                g.setFill(Color.color(tint.getRed(), tint.getGreen(), tint.getBlue(), 0.28));
-                g.fillOval(cx - r * 2.1, cy - r * 2.1, r * 4.2, r * 4.2);
-            }
-            g.setFill(lit ? tint : Palette.LAMP_OFF);
+        Color tint = Palette.forState(state);
+        for (int i = 0; i < 2; i++) {
+            double cx = i * LANE;
+            double cy = 0;
+
+            // Each circle changes color instead of having separate red/yellow/green bulbs.
+            g.setFill(Color.color(tint.getRed(), tint.getGreen(), tint.getBlue(), 0.28));
+            g.fillOval(cx - r * 2.1, cy - r * 2.1, r * 4.2, r * 4.2);
+            g.setFill(tint);
             g.fillOval(cx - r, cy - r, r * 2, r * 2);
         }
         g.restore();
@@ -289,10 +295,8 @@ public class IntersectionView extends Canvas {
         g.setTextAlign(TextAlignment.CENTER);
         for (char d : Simulation.DIRS) {
             double[] hp = headPos(d);
-            boolean vertical = hp[2] == 1;
-            // Clear of the housing: half its length plus room for the text.
-            double lift = vertical ? 34 : 22;
-            double ty = (d == 'S') ? hp[1] + lift + 8 : hp[1] - lift;
+            double lift = d == 'E' || d == 'W' ? 54 : 20;
+            double ty = (d == 'S') ? hp[1] + 28 : hp[1] - lift;
             g.fillText(Simulation.headId(d), hp[0], ty);
         }
 

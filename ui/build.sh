@@ -3,19 +3,14 @@
 set -e
 cd "$(dirname "$0")/.."
 
-FX="${PATH_TO_FX:-$HOME/javafx/javafx-sdk-26.0.2/lib}"
+FX="${PATH_TO_FX:-.deps/javafx-17.0.16}"
 if [ ! -d "$FX" ]; then
   echo "JavaFX SDK not found at: $FX"
-  echo
-  echo "Download the SDK for your machine from https://gluonhq.com/products/javafx/"
-  echo "then either unpack it to ~/javafx/javafx-sdk-26.0.2, or point PATH_TO_FX"
-  echo "at its lib folder:"
-  echo "    export PATH_TO_FX=/path/to/javafx-sdk-26.0.2/lib"
+  echo "Run bash ui/setup-javafx.sh, or set PATH_TO_FX to a JavaFX 17 SDK lib folder."
   exit 1
 fi
 
 mkdir -p out
-javac -d out $(find src/main/java -name '*.java')
-javac --module-path "$FX" --add-modules javafx.controls \
-      -cp out -d out ui/*.java
-echo "built -> out/ui"
+javac --release 17 --module-path "$FX" --add-modules javafx.controls \
+      -d out $(find src/main/java -name '*.java') ui/*.java
+echo "built controller and display -> out"

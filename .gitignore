@@ -3,6 +3,7 @@ out/
 build/
 target/
 *.class
+.deps/
 
 # IDE and operating-system files
 .idea/
