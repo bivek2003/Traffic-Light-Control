@@ -30,5 +30,10 @@ This is an intentional change from the plan's strict night priority. The method
 signatures, emergency/pedestrian priority and clearance timings are unchanged.
 Lane L moves only on LEFT GREEN, not on the same road's through green.
 
+Every approach now has a horizontal signal head with a separate colored left
+arrow and three through lamps. During a left phase the through lamps stay red;
+during a through phase the arrow stays red. Yellow/all-red clearance and the
+existing phase order are unchanged.
+
 Run `bash ui/test.sh` for the non-GUI checks. This is still a teaching simulator,
 not a real-road collision model or a tested hardware controller.

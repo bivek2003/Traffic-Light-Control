@@ -293,6 +293,15 @@ public class Simulation {
         return labPattern != null && labPattern.name().contains("LEFT");
     }
 
+    // Left turns and through traffic have separate lamps on the same approach.
+    public String leftColourOf(char dir) {
+        return leftOnly() ? colourOf(dir) : "RED";
+    }
+
+    public String throughColourOf(char dir) {
+        return leftOnly() ? "RED" : colourOf(dir);
+    }
+
     // Lane numbers in the drawing run L, C, R from the centre line outward.
     public boolean[][] vehiclePresence() {
         boolean[][] result = new boolean[4][3];
@@ -699,8 +708,8 @@ public class Simulation {
 
     private boolean mayProceed(Vehicle vehicle, double gap) {
         if (labPattern == null) return mayProceed(vehicle.dir, gap);
-        if (!"GREEN".equals(colours.get(vehicle.dir))) return false;
-        return leftOnly() ? vehicle.lane == 1 : vehicle.lane != 1;
+        String signal = vehicle.lane == 1 ? leftColourOf(vehicle.dir) : throughColourOf(vehicle.dir);
+        return "GREEN".equals(signal);
     }
 
     /** Distance from this vehicle's front bumper to the rear of the one ahead. */

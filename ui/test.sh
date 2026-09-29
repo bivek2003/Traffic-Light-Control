@@ -6,6 +6,7 @@ bash ui/build.sh
 javac --release 17 --module-path "$FX" --add-modules javafx.controls \
   -cp out -d out $(find src/test/java -name '*.java')
 for test in ui.LabObjectsTest ui.SimulationIntegrationTest ui.RightTurnPathTest ui.TrafficSpacingTest \
+  ui.SignalHeadTest \
   trafficcontrol.controller.TrafficControllerLogicTest \
   trafficcontrol.controller.TrafficControllerSocketTest \
   trafficcontrol.controller.EmergencyModeTest trafficcontrol.controller.EmergencyRequestsTest \
