@@ -2,19 +2,42 @@ package trafficcontrol.controller;
 
 import java.util.EnumSet;
 import java.util.Objects;
+import java.util.function.LongSupplier;
 
 // Independent prototype; device commands and mode selection belong to the caller.
 public final class PedestrianMode {
     private final long crossingMillis;
+    private final LongSupplier clock;
     private final EnumSet<Direction> pending = EnumSet.noneOf(Direction.class);
     private final EnumSet<Direction> crossing = EnumSet.noneOf(Direction.class);
     private long startedAt;
 
     public PedestrianMode(long crossingMillis) {
+        this(crossingMillis, () -> System.nanoTime() / 1_000_000);
+    }
+
+    public PedestrianMode(long crossingMillis, LongSupplier clock) {
         if (crossingMillis <= 0) {
             throw new IllegalArgumentException("crossing duration must be positive");
         }
         this.crossingMillis = crossingMillis;
+        this.clock = Objects.requireNonNull(clock);
+    }
+
+    public void start() {
+        start(clock.getAsLong());
+    }
+
+    public void update() {
+        advance(clock.getAsLong());
+    }
+
+    // Stop is a lifecycle handoff, not permission to interrupt people crossing.
+    public void stop() {
+        update();
+        if (isCrossingActive()) {
+            throw new IllegalStateException("pedestrian crossing must finish before stopping");
+        }
     }
 
     public void request(Direction direction) {
