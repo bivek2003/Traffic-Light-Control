@@ -275,6 +275,13 @@ public class IntersectionView extends Canvas {
             }
             g.setFill(lit ? tint : Palette.LAMP_OFF);
             g.fillOval(cx - r, cy - r, r * 2, r * 2);
+            if (lit && sim.leftOnly() && !"RED".equals(state)) {
+                g.setStroke(Palette.HEAD_BODY);
+                g.setLineWidth(1.5);
+                g.strokeLine(cx - 3, cy, cx + 3, cy);
+                g.strokeLine(cx - 3, cy, cx, cy - 3);
+                g.strokeLine(cx - 3, cy, cx, cy + 3);
+            }
         }
         g.restore();
     }

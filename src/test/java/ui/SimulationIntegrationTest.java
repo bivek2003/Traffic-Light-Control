@@ -63,10 +63,9 @@ public final class SimulationIntegrationTest {
                 Vehicle.Maneuver.LEFT);
         leftTurn.t = Simulation.STOP_T - 10 - leftTurn.length / 2;
         simulation.vehicles().add(leftTurn);
-        double beforeTurn = leftTurn.t;
         simulation.advance(0.2);
-        check(leftTurn.t > beforeTurn + 10,
-                "left-turn vehicle stopped for a red light");
+        check(leftTurn.front() < Simulation.STOP_T,
+                "left-turn vehicle crossed a red light");
         leftTurn.t = Simulation.STOP_T + 60;
         double[] curved = Simulation.place(leftTurn);
         double[] straight = Simulation.place(leftTurn.dir, leftTurn.t, leftTurn.lane);
@@ -77,10 +76,9 @@ public final class SimulationIntegrationTest {
                 Vehicle.Maneuver.RIGHT);
         rightTurn.t = Simulation.STOP_T - 10 - rightTurn.length / 2;
         simulation.vehicles().add(rightTurn);
-        double beforeRightTurn = rightTurn.t;
         simulation.advance(0.2);
-        check(rightTurn.t > beforeRightTurn + 10,
-                "right-turn vehicle stopped for a red light");
+        check(rightTurn.front() < Simulation.STOP_T,
+                "right-turn vehicle crossed a red light");
         System.out.println("SimulationIntegrationTest: " + checks + " checks passed");
     }
 

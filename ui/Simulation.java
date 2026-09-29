@@ -98,6 +98,9 @@ public class Simulation {
         if (vehicle.maneuver == Vehicle.Maneuver.STRAIGHT || vehicle.t <= TURN_START_T) {
             return place(vehicle.dir, vehicle.t, vehicle.lane);
         }
+        if (vehicle.maneuver == Vehicle.Maneuver.RIGHT) {
+            return placeRightTurn(vehicle);
+        }
 
         char exitDirection = turnDirection(vehicle.dir, vehicle.maneuver);
         int exitLane = vehicle.maneuver == Vehicle.Maneuver.RIGHT ? 3 : 1;
@@ -121,6 +124,24 @@ public class Simulation {
         double dy = 2 * inverse * (controlY - start[1])
                 + 2 * progress * (end[1] - controlY);
         return new double[]{x, y, Math.toDegrees(Math.atan2(dy, dx))};
+    }
+
+    // A quarter circle meets both straight sections without reversing or snapping.
+    private static double[] placeRightTurn(Vehicle vehicle) {
+        double[] start = place(vehicle.dir, TURN_START_T, vehicle.lane);
+        double radius = HALF + BAR_FAR - 2.5 * LANE;
+        double travelled = vehicle.t - TURN_START_T;
+        double angle = Math.min(travelled / radius, Math.PI / 2);
+        double heading = Math.toRadians(start[2]);
+        double forwardX = Math.cos(heading), forwardY = Math.sin(heading);
+        double rightX = -forwardY, rightY = forwardX;
+        double forward = radius * Math.sin(angle);
+        double sideways = radius * (1 - Math.cos(angle));
+        // After the curve, keep travelling along the outgoing kerb lane.
+        sideways += Math.max(0, travelled - Math.PI * radius / 2);
+        return new double[]{start[0] + forward * forwardX + sideways * rightX,
+                start[1] + forward * forwardY + sideways * rightY,
+                start[2] + Math.toDegrees(angle)};
     }
 
     private static char turnDirection(char incoming, Vehicle.Maneuver maneuver) {
@@ -179,6 +200,8 @@ public class Simulation {
     private double spawnClock = 0;
     private double density = 1.0;
     private boolean deviceControlled;
+    private devices.TrafficPattern labPattern;
+    private devices.PedLightStatus labPedestrian = devices.PedLightStatus.STOP;
     private boolean detectorChecked;
     private double demandClock;
     private String activeDetectorId;
@@ -242,6 +265,7 @@ public class Simulation {
         return pedestrians;
     }
     public String phaseLabel() {
+        if (labPattern != null) return labPattern.name();
         if (!deviceControlled) {
             return PHASES[phase].label();
         }
@@ -259,7 +283,10 @@ public class Simulation {
         return "East-west " + colour.toLowerCase();
     }
     public List<Vehicle> vehicles()       { return vehicles; }
-    public void setDensity(double d)      { this.density = d; }
+    public void setDensity(double d) {
+        this.density = Math.max(0, d);
+        spawnClock = 0;
+    }
 
     /** Adds a randomly configured vehicle at one approach's detector. */
     public Vehicle triggerDetector(char dir) {
@@ -286,6 +313,36 @@ public class Simulation {
         deviceControlled = true;
     }
 
+    // In lab mode the display reads patterns; it never selects a phase itself.
+    public void applyLabState(devices.TrafficPattern pattern, devices.PedLightStatus pedestrian) {
+        deviceControlled = true;
+        labPattern = pattern;
+        for (char dir : DIRS) {
+            String road = dir == 'N' || dir == 'S' ? "NS" : "EW";
+            String color = pattern.name().startsWith(road)
+                    ? (pattern.name().endsWith("GREEN") ? "GREEN" : "AMBER") : "RED";
+            colours.put(dir, color);
+        }
+        if (pedestrian == devices.PedLightStatus.WALK && labPedestrian != pedestrian) {
+            for (char dir : DIRS) startCrossing(dir);
+        }
+        labPedestrian = pedestrian;
+    }
+
+    public boolean leftOnly() {
+        return labPattern != null && labPattern.name().contains("LEFT");
+    }
+
+    // Lane numbers in the drawing run L, C, R from the centre line outward.
+    public boolean[][] vehiclePresence() {
+        boolean[][] result = new boolean[4][3];
+        for (Vehicle vehicle : vehicles) {
+            double gap = STOP_T - vehicle.front();
+            if (gap > 0 && gap < 250) result[directionIndex(vehicle.dir)][vehicle.lane - 1] = true;
+        }
+        return result;
+    }
+
     // ---- the loop -------------------------------------------------------
 
     public void advance(double dt) {
@@ -303,7 +360,7 @@ public class Simulation {
         movePedestrians(dt);
         maybeSpawn(dt);
         moveVehicles(dt);
-        updateSignalDemand(dt);
+        if (labPattern == null) updateSignalDemand(dt);
     }
 
     private void updateSignalDemand(double dt) {
@@ -640,13 +697,13 @@ public class Simulation {
         javafx.scene.paint.Color colour = random.nextDouble() < 0.12
                 ? Palette.CAR_ACCENT
                 : Palette.CAR[random.nextInt(Palette.CAR.length)];
-        double choice = random.nextDouble();
-        Vehicle.Maneuver maneuver = choice < 0.25 ? Vehicle.Maneuver.LEFT
-                : choice < 0.50 ? Vehicle.Maneuver.RIGHT : Vehicle.Maneuver.STRAIGHT;
+        Vehicle.Maneuver maneuver = lane == 1 ? Vehicle.Maneuver.LEFT
+                : lane == 3 ? Vehicle.Maneuver.RIGHT : Vehicle.Maneuver.STRAIGHT;
         return new Vehicle(dir, lane, length, top, colour, maneuver);
     }
 
     private void maybeSpawn(double dt) {
+        if (density <= 0) return;
         spawnClock -= dt;
         if (spawnClock > 0) {
             return;
@@ -680,6 +737,12 @@ public class Simulation {
         return false;
     }
 
+    private boolean mayProceed(Vehicle vehicle, double gap) {
+        if (labPattern == null) return mayProceed(vehicle.dir, gap);
+        if (!"GREEN".equals(colours.get(vehicle.dir))) return false;
+        return leftOnly() ? vehicle.lane == 1 : vehicle.lane != 1;
+    }
+
     /** Distance from this vehicle's front bumper to the rear of the one ahead. */
     private double leaderGap(Vehicle v) {
         double best = Double.MAX_VALUE;
@@ -698,7 +761,6 @@ public class Simulation {
     private void moveVehicles(double dt) {
         for (Vehicle v : vehicles) {
             double frontGap = STOP_T - v.front();
-            boolean turning = v.maneuver != Vehicle.Maneuver.STRAIGHT;
 
             // How far this vehicle may advance this frame.
             //
@@ -707,10 +769,10 @@ public class Simulation {
             // as already across on the next frame, and accelerates through
             // the red.
             double room = Double.MAX_VALUE;
-            if (!turning && frontGap > 0 && !mayProceed(v.dir, frontGap)) {
+            if (frontGap > 0 && !mayProceed(v, frontGap)) {
                 room = Math.max(0, frontGap - 0.8);
             }
-            if (!turning) {
+            if (frontGap > 0 || v.maneuver == Vehicle.Maneuver.STRAIGHT) {
                 double ahead = leaderGap(v) - 9;
                 if (ahead < room) {
                     room = ahead;
