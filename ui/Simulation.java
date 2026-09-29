@@ -75,7 +75,7 @@ public class Simulation {
     /** A vehicle is finished once it travels this far. */
     public static final double EXIT_T = 940;
     private static final double TURN_START_T = STOP_T;
-    private static final double TURN_END_T = JUNCTION_T + 120;
+    private static final double FOLLOWING_GAP = 18;
 
     public static final char[] DIRS = {'N', 'S', 'E', 'W'};
 
@@ -98,67 +98,27 @@ public class Simulation {
         if (vehicle.maneuver == Vehicle.Maneuver.STRAIGHT || vehicle.t <= TURN_START_T) {
             return place(vehicle.dir, vehicle.t, vehicle.lane);
         }
-        if (vehicle.maneuver == Vehicle.Maneuver.RIGHT) {
-            return placeRightTurn(vehicle);
-        }
-
-        char exitDirection = turnDirection(vehicle.dir, vehicle.maneuver);
-        int exitLane = vehicle.maneuver == Vehicle.Maneuver.RIGHT ? 3 : 1;
-        if (vehicle.t >= TURN_END_T) {
-            double exitT = TURN_END_T + (vehicle.t - TURN_END_T);
-            return place(exitDirection, exitT, exitLane);
-        }
-
-        double[] start = place(vehicle.dir, TURN_START_T, vehicle.lane);
-        double[] end = place(exitDirection, TURN_END_T, exitLane);
-        double controlX = vehicle.dir == 'N' || vehicle.dir == 'S' ? start[0] : end[0];
-        double controlY = vehicle.dir == 'N' || vehicle.dir == 'S' ? end[1] : start[1];
-        double progress = (vehicle.t - TURN_START_T) / (TURN_END_T - TURN_START_T);
-        double inverse = 1.0 - progress;
-        double x = inverse * inverse * start[0]
-                + 2 * inverse * progress * controlX + progress * progress * end[0];
-        double y = inverse * inverse * start[1]
-                + 2 * inverse * progress * controlY + progress * progress * end[1];
-        double dx = 2 * inverse * (controlX - start[0])
-                + 2 * progress * (end[0] - controlX);
-        double dy = 2 * inverse * (controlY - start[1])
-                + 2 * progress * (end[1] - controlY);
-        return new double[]{x, y, Math.toDegrees(Math.atan2(dy, dx))};
+        return placeTurn(vehicle);
     }
 
     // A quarter circle meets both straight sections without reversing or snapping.
-    private static double[] placeRightTurn(Vehicle vehicle) {
+    private static double[] placeTurn(Vehicle vehicle) {
         double[] start = place(vehicle.dir, TURN_START_T, vehicle.lane);
-        double radius = HALF + BAR_FAR - 2.5 * LANE;
+        boolean right = vehicle.maneuver == Vehicle.Maneuver.RIGHT;
+        double sign = right ? 1 : -1;
+        double radius = HALF + BAR_FAR + (right ? -2.5 : 0.5) * LANE;
         double travelled = vehicle.t - TURN_START_T;
         double angle = Math.min(travelled / radius, Math.PI / 2);
         double heading = Math.toRadians(start[2]);
         double forwardX = Math.cos(heading), forwardY = Math.sin(heading);
-        double rightX = -forwardY, rightY = forwardX;
+        double sideX = -forwardY * sign, sideY = forwardX * sign;
         double forward = radius * Math.sin(angle);
         double sideways = radius * (1 - Math.cos(angle));
-        // After the curve, keep travelling along the outgoing kerb lane.
+        // Keep moving along the exit lane after the arc, at the same speed.
         sideways += Math.max(0, travelled - Math.PI * radius / 2);
-        return new double[]{start[0] + forward * forwardX + sideways * rightX,
-                start[1] + forward * forwardY + sideways * rightY,
-                start[2] + Math.toDegrees(angle)};
-    }
-
-    private static char turnDirection(char incoming, Vehicle.Maneuver maneuver) {
-        if (maneuver == Vehicle.Maneuver.RIGHT) {
-            return switch (incoming) {
-                case 'N' -> 'E';
-                case 'S' -> 'W';
-                case 'E' -> 'S';
-                default -> 'N';
-            };
-        }
-        return switch (incoming) {
-            case 'N' -> 'W';
-            case 'S' -> 'E';
-            case 'E' -> 'N';
-            default -> 'S';
-        };
+        return new double[]{start[0] + forward * forwardX + sideways * sideX,
+                start[1] + forward * forwardY + sideways * sideY,
+                start[2] + sign * Math.toDegrees(angle)};
     }
 
     /** Centre of the crosswalk on one side, in world coordinates. */
@@ -680,11 +640,11 @@ public class Simulation {
         for (char d : DIRS) {
             for (int lane = 1; lane <= 3; lane++) {
                 double t = random.nextDouble() * 70;
-                while (t < 330) {
+                while (t < STOP_T - 22) {
                     Vehicle v = newVehicle(d, lane);
                     v.t = t;
                     vehicles.add(v);
-                    // Longest vehicle is 42, and following distance is 9.
+                    // Leave more than one car length between starting positions.
                     t += 95 + random.nextDouble() * 130;
                 }
             }
@@ -759,6 +719,8 @@ public class Simulation {
     }
 
     private void moveVehicles(double dt) {
+        // Front cars move first, including cars already on a curved path.
+        vehicles.sort((a, b) -> Double.compare(b.t, a.t));
         for (Vehicle v : vehicles) {
             double frontGap = STOP_T - v.front();
 
@@ -772,12 +734,7 @@ public class Simulation {
             if (frontGap > 0 && !mayProceed(v, frontGap)) {
                 room = Math.max(0, frontGap - 0.8);
             }
-            if (frontGap > 0 || v.maneuver == Vehicle.Maneuver.STRAIGHT) {
-                double ahead = leaderGap(v) - 9;
-                if (ahead < room) {
-                    room = ahead;
-                }
-            }
+            room = Math.min(room, leaderGap(v) - FOLLOWING_GAP);
 
             double target = room <= 0.5 ? 0 : v.topSpeed;
             // Ease toward the target so queues compress rather than snap.
@@ -790,6 +747,7 @@ public class Simulation {
             if (advance > room) {
                 advance = Math.max(0, room);
             }
+            if (dt > 0) v.speed = advance / dt;
             v.t += advance;
         }
         vehicles.removeIf(v -> v.t >= EXIT_T);

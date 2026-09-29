@@ -8,4 +8,4 @@ FX="${PATH_TO_FX:-.deps/javafx-17.0.16}"
 
 java --module-path "$FX" --add-modules javafx.controls \
      --enable-native-access=javafx.graphics \
-     -cp out ui.TrafficApp "$@"
+     -cp out controller.Controller "$@"
