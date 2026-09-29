@@ -12,7 +12,7 @@ public final class PedestrianLifecycleTest {
         pedestrian.start();
         emergency.update(now[0], EnumSet.of(Direction.WEST), pedestrian.isCrossingActive(), false);
         check(emergency.getStage() == EmergencyMode.Stage.WAIT_FOR_PEDESTRIAN,
-                "SAD lifecycle must report active crossing to Emergency");
+                "active crossing must be reported to Emergency");
         pedestrian.request(Direction.SOUTH);
         now[0] = 109;
         try {

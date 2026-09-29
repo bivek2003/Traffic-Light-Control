@@ -4,7 +4,6 @@ import java.util.EnumSet;
 import java.util.Objects;
 import java.util.function.LongSupplier;
 
-// Independent prototype; device commands and mode selection belong to the caller.
 public final class PedestrianMode {
     private final long crossingMillis;
     private final LongSupplier clock;
@@ -32,7 +31,6 @@ public final class PedestrianMode {
         advance(clock.getAsLong());
     }
 
-    // Stop is a lifecycle handoff, not permission to interrupt people crossing.
     public void stop() {
         update();
         if (isCrossingActive()) {
@@ -48,8 +46,6 @@ public final class PedestrianMode {
         return !pending.isEmpty();
     }
 
-    // Start only after vehicle clearance and when Emergency does not require control.
-    // The caller holds all vehicle lights red throughout the crossing.
     public void start(long now) {
         if (isCrossingActive() || pending.isEmpty()) {
             throw new IllegalStateException("crossing is active or no request is pending");
@@ -59,7 +55,6 @@ public final class PedestrianMode {
         startedAt = now;
     }
 
-    // Use increasing millisecond times. Apply STOP on completion before selecting a mode.
     public void advance(long now) {
         if (isCrossingActive() && now - startedAt >= crossingMillis) {
             crossing.clear();
